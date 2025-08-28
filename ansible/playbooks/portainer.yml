@@ -1,0 +1,11 @@
+---
+# Portainer Deployment Playbook
+# Deploys Portainer main instance on zima-01
+
+- name: Deploy Portainer container management
+  hosts: zima-01
+  become: true
+  tags:
+    - portainer
+  roles:
+    - portainer

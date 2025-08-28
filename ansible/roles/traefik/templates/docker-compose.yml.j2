@@ -1,0 +1,54 @@
+---
+# Traefik Docker Compose Configuration
+# This file is managed by Ansible - local changes will be overwritten
+
+services:
+  traefik:
+    image: {{ traefik_docker_image }}
+    container_name: {{ traefik_container_name }}
+    hostname: {{ traefik_dashboard_domain }}
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    networks:
+      - {{ traefik_network_name }}
+    ports:
+      - "{{ traefik_http_port }}:{{ traefik_http_port }}"
+      - "{{ traefik_https_port }}:{{ traefik_https_port }}"
+      - "{{ traefik_dashboard_port }}:{{ traefik_dashboard_port }}"
+    env_file:
+      - .env
+    environment:
+      - TZ=UTC
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./traefik.yml:/etc/traefik/traefik.yml:ro
+      - ./dynamic:/etc/traefik/dynamic:ro
+      - ../data/acme.json:/data/acme.json
+    labels:
+      - "traefik.enable=true"
+      
+      # Dashboard configuration
+      - "traefik.http.routers.dashboard.rule=Host(`{{ traefik_dashboard_domain }}`)"
+      - "traefik.http.routers.dashboard.service=api@internal"
+      - "traefik.http.routers.dashboard.entrypoints=websecure"
+      - "traefik.http.routers.dashboard.tls=true"
+      - "traefik.http.routers.dashboard.tls.certresolver={{ traefik_default_cert_resolver }}"
+      
+      # Homepage Auto-Discovery Labels
+{% if traefik_homepage_integration %}
+      - "homepage.group={{ inventory_hostname }}"
+      - "homepage.name={{ traefik_homepage_name }}"
+      - "homepage.icon={{ traefik_homepage_icon }}"
+      - "homepage.href=https://{{ traefik_dashboard_domain }}"
+      - "homepage.description={{ traefik_homepage_description }}"
+      - "homepage.widget.type=traefik" 
+      - "homepage.widget.url=https://{{ traefik_dashboard_domain }}"
+{% endif %}
+
+      # Watchtower Update Control - DISABLED for stability
+      - "com.centurylinklabs.watchtower.enable=false"
+
+networks:
+  {{ traefik_network_name }}:
+    external: true

@@ -111,3 +111,21 @@ This will apply the following changes:
 - Check existing ACLs for Docker Compose directory
 - Set additional permissions for Docker Compose directory
 - Ensure setfacl is installed (for ACL management)
+
+## Tier THREE: Traefik & Portainer Installation
+
+Run the Traefik playbook:
+
+```bash
+ansible-playbook -i ansible/inventory/hosts ansible/playbooks/traefik.yml
+```
+
+This will apply the following changes:
+
+- Create Traefik directories
+- Create Traefik network
+- Create acme.json file with proper permissions
+- Create Traefik configuration files
+- Deploy Traefik container
+
+If all goes well, you should be able to access the Traefik dashboard at <https://traefik.l4n.io>.

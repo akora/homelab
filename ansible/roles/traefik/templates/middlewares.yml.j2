@@ -1,0 +1,23 @@
+## Traefik Middlewares Configuration
+## This file is managed by Ansible - local changes will be overwritten
+
+http:
+  middlewares:
+    # Security headers middleware - applies HSTS and other security headers
+    security-headers:
+      headers:
+        frameDeny: true
+        browserXssFilter: true
+        contentTypeNosniff: true
+        forceSTSHeader: true
+        stsIncludeSubdomains: true
+        stsPreload: true
+        stsSeconds: 31536000  # 1 year
+        customResponseHeaders:
+          X-Robots-Tag: "noindex,nofollow,nosnippet,noarchive,notranslate,noimageindex"
+          Server: ""
+          X-Content-Type-Options: "nosniff"
+
+    # Compression middleware
+    compress:
+      compress: {}

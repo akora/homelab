@@ -1,0 +1,53 @@
+---
+# LAN Services Configuration for Traefik
+# This file is managed by Ansible - local changes will be overwritten
+
+http:
+  routers:
+    router:
+      rule: "Host(`router.{{ vault_domain }}`)"
+      service: "router"
+      entryPoints:
+        - "websecure"
+      tls:
+        certResolver: "{{ traefik_default_cert_resolver }}"
+      middlewares:
+        - "lan-ip-whitelist@file"
+    
+    nas:
+      rule: "Host(`nas.{{ vault_domain }}`)"
+      service: "nas"
+      entryPoints:
+        - "websecure"
+      tls:
+        certResolver: "{{ traefik_default_cert_resolver }}"
+      middlewares:
+        - "lan-ip-whitelist@file"
+  
+  services:
+    router:
+      loadBalancer:
+        servers:
+          - url: "http://{{ vault_host_ips.router }}:8000"
+        passHostHeader: true
+        
+    nas:
+      loadBalancer:
+        servers:
+          - url: "https://{{ vault_host_ips.nas }}:5001"
+        passHostHeader: true
+        serversTransport: "nas-transport"
+
+  middlewares:
+    # Only allow access from local network
+    lan-ip-whitelist:
+      ipAllowList:
+        sourceRange:
+          - "127.0.0.1/32"
+          - "{{ vault_lan_subnet | regex_replace('/24', '/16') }}"
+          - "10.0.0.0/8"
+          - "172.16.0.0/12"
+          
+  serversTransports:
+    nas-transport:
+      insecureSkipVerify: true  # Skip TLS verification for self-signed certificates

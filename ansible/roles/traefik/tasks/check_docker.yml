@@ -1,0 +1,35 @@
+---
+# Check if Docker is installed and running
+
+- name: Check if Docker is installed
+  ansible.builtin.command: which docker
+  register: docker_check
+  changed_when: false
+  failed_when: false
+
+- name: Fail if Docker is not installed
+  ansible.builtin.fail:
+    msg: "Docker is not installed. Please install Docker first."
+  when: docker_check.rc != 0
+
+- name: Check if Docker is running
+  ansible.builtin.command: docker info
+  register: docker_info
+  changed_when: false
+  failed_when: false
+
+- name: Fail if Docker is not running
+  ansible.builtin.fail:
+    msg: "Docker is not running. Please start Docker service."
+  when: docker_info.rc != 0
+
+- name: Check if Docker Compose is available
+  ansible.builtin.command: docker compose version
+  register: docker_compose_check
+  changed_when: false
+  failed_when: false
+
+- name: Fail if Docker Compose is not available
+  ansible.builtin.fail:
+    msg: "Docker Compose is not available. Please ensure Docker Compose is installed."
+  when: docker_compose_check.rc != 0

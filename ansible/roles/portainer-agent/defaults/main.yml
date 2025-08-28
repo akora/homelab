@@ -1,0 +1,22 @@
+---
+# Portainer Agent defaults
+
+# Container configuration
+portainer_agent_image: "portainer/agent:latest"
+portainer_agent_container_name: "portainer-agent"
+portainer_agent_port: 9001
+
+# Network configuration
+portainer_agent_docker_network: "traefik-net"
+
+# Portainer server connection
+portainer_server_host: "zima-01"
+portainer_server_addr: "{{ vault_host_ips.zima_01 }}" 
+
+# Edge Agent connection
+# These values must be obtained from Portainer UI > Environments > Add Environment > Edge Agent
+portainer_agent_edge_key: "{{ vault_portainer_agent_edge_key }}"
+portainer_agent_edge_id: "{{ inventory_hostname }}"
+
+# Labels
+portainer_agent_group: "Infrastructure"

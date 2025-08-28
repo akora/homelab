@@ -1,0 +1,58 @@
+---
+# Portainer Deployment Tasks
+# This file is managed by Ansible - local changes will be overwritten
+
+- name: Create Portainer directories
+  file:
+    path: "{{ portainer_data_dir }}"
+    state: directory
+    mode: '0755'
+
+- name: Stop and remove existing Portainer container if exists
+  community.docker.docker_container:
+    name: "{{ portainer_container_name }}"
+    state: absent
+    force_kill: yes
+
+- name: Check if Docker network exists
+  shell: docker network ls | grep {{ portainer_docker_network }}
+  register: network_check
+  changed_when: false
+  failed_when: false
+
+- name: Create Docker network if it doesn't exist
+  community.docker.docker_network:
+    name: "{{ portainer_docker_network }}"
+    driver: bridge
+  when: network_check.rc != 0
+
+- name: Deploy Portainer container
+  community.docker.docker_container:
+    name: "{{ portainer_container_name }}"
+    image: "{{ portainer_image }}"
+    restart_policy: unless-stopped
+    networks:
+      - name: "{{ portainer_docker_network }}"
+    volumes:
+      - "{{ portainer_data_dir }}:/data"
+      - "/var/run/docker.sock:/var/run/docker.sock:ro"
+    env:
+      TZ: "UTC"
+    labels:
+      traefik.enable: "true"
+      traefik.http.routers.portainer.rule: "Host(`{{ portainer_domain }}`)"
+      traefik.http.routers.portainer.entrypoints: "websecure"
+      traefik.http.routers.portainer.tls: "true"
+      traefik.http.routers.portainer.tls.certresolver: "cloudflare"
+      traefik.http.routers.portainer.middlewares: "security-headers@file"
+      traefik.http.services.portainer.loadbalancer.server.port: "{{ portainer_port }}"
+      # Homepage-specific labels
+      homepage.enable: "true"
+      homepage.name: "Portainer"
+      homepage.icon: "si-portainer"
+      homepage.description: "Container Management"
+      homepage.href: "https://{{ portainer_domain }}"
+      homepage.group: "{{ inventory_hostname }}"
+      homepage.statusStyle: ""
+      # Watchtower Update Control
+      com.centurylinklabs.watchtower.enable: "true"

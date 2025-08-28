@@ -1,0 +1,10 @@
+---
+# Traefik Ansible Playbook for Homelab
+# This playbook sets up Traefik as a reverse proxy with Cloudflare DNS challenge
+
+- name: Set up Traefik reverse proxy
+  hosts: zima-01  # Using Zimaboard as the entry point
+  become: true
+
+  roles:
+    - role: traefik

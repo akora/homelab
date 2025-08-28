@@ -1,0 +1,16 @@
+---
+# Portainer defaults
+
+# Container configuration
+portainer_image: "portainer/portainer-ce:2.27.6"
+portainer_container_name: "portainer"
+portainer_port: 9000
+
+# Network configuration
+portainer_docker_network: "traefik-net"
+
+# Domain configuration
+portainer_domain: "{{ vault_service_domains.portainer }}"
+
+# Data directory
+portainer_data_dir: "/opt/docker/portainer"

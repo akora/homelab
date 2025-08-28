@@ -1,0 +1,42 @@
+---
+# Traefik Role Default Variables
+
+# Deployment settings
+traefik_docker_image: "traefik:v3.5.0"
+traefik_container_name: "traefik"
+traefik_network_name: "traefik-net"
+traefik_data_directory: "/opt/docker/traefik/data"
+traefik_config_directory: "/opt/docker/traefik/config"
+
+# Port settings
+traefik_enable_dashboard_port: false  # Set to true to expose dashboard on 8080
+traefik_http_port: "80"
+traefik_https_port: "443"
+traefik_dashboard_port: "8080"
+
+# TLS settings
+traefik_enable_tls: true
+traefik_default_cert_resolver: "cloudflare"
+traefik_wildcard_domain: "*.{{ vault_domain }}"  # Wildcard domain for certificates
+
+# Dashboard settings
+traefik_dashboard_domain: "{{ vault_service_domains.traefik }}"
+traefik_dashboard_enabled: true
+traefik_api_insecure: true  # Set to true for development only
+
+# Logging
+traefik_log_level: "INFO"  # DEBUG, INFO, WARNING, ERROR, FATAL, PANIC
+
+# Cloudflare settings
+traefik_cloudflare_email: "{{ vault_traefik_cloudflare_email }}"
+traefik_cloudflare_dns_api_token: "{{ vault_traefik_cloudflare_dns_api_token }}"
+
+# Let's Encrypt configuration
+traefik_letsencrypt_email: "{{ vault_traefik_letsencrypt_email }}"
+
+# Homepage integration
+traefik_homepage_integration: true
+traefik_homepage_group: "{{ inventory_hostname }}"
+traefik_homepage_name: "Traefik Dashboard"
+traefik_homepage_icon: "si-traefikproxy"
+traefik_homepage_description: "Reverse Proxy Dashboard"

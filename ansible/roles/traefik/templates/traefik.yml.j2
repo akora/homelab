@@ -1,0 +1,62 @@
+# Traefik Static Configuration
+# This file is managed by Ansible - local changes will be overwritten
+
+global:
+  checkNewVersion: true
+  sendAnonymousUsage: false
+
+log:
+  level: "{{ traefik_log_level }}"
+
+ping:
+  entryPoint: "traefik"
+
+api:
+  dashboard: {{ traefik_dashboard_enabled | lower }}
+  insecure: {{ traefik_api_insecure | lower }}
+
+entryPoints:
+  web:
+    address: ":{{ traefik_http_port }}"
+    http:
+      redirections:
+        entryPoint:
+          to: websecure
+          scheme: https
+          permanent: true
+  websecure:
+    address: ":{{ traefik_https_port }}"
+    http:
+      tls:
+        certResolver: {{ traefik_default_cert_resolver }}
+  traefik:
+    address: ":8080"
+
+providers:
+  docker:
+    endpoint: "unix:///var/run/docker.sock"
+    exposedByDefault: false
+    network: {{ traefik_network_name }}
+  file:
+    directory: "/etc/traefik/dynamic"
+    watch: true
+
+certificatesResolvers:
+  cloudflare:
+    acme:
+      email: "{{ traefik_letsencrypt_email }}"
+      storage: /data/acme.json
+      dnsChallenge:
+        provider: cloudflare
+        delayBeforeCheck: 0 # To reduce propagation time for Cloudflare
+        resolvers:
+          - "1.1.1.1:53"
+          - "1.0.0.1:53"
+
+tls:
+  certificates:
+    - certResolver: cloudflare
+      domains:
+        - main: "{{ vault_domain }}"
+          sans:
+            - "*.{{ vault_domain }}"

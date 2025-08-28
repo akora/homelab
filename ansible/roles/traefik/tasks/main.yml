@@ -1,0 +1,60 @@
+---
+# Traefik Role Tasks
+
+- name: Ensure Docker is installed
+  ansible.builtin.include_tasks: check_docker.yml
+
+- name: Create Traefik directories
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    mode: "0755"
+  loop:
+    - "{{ traefik_data_directory }}"
+    - "{{ traefik_config_directory }}"
+    - "{{ traefik_config_directory }}/dynamic"
+
+- name: Create Traefik network
+  community.docker.docker_network:
+    name: "{{ traefik_network_name }}"
+    driver: bridge
+    driver_options:
+      com.docker.network.bridge.enable_icc: "true"
+      com.docker.network.bridge.enable_ip_masquerade: "true"
+    ipam_config:
+      - subnet: "172.20.0.0/16"
+        gateway: "172.20.0.1"
+    state: present
+
+- name: Create acme.json file with proper permissions
+  ansible.builtin.file:
+    path: "{{ traefik_data_directory }}/acme.json"
+    state: touch
+    mode: "0600"
+
+- name: Create Traefik configuration files
+  ansible.builtin.template:
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
+    mode: "0644"
+  with_items:
+    - { src: "traefik.yml.j2", dest: "{{ traefik_config_directory }}/traefik.yml" }
+    - { src: "docker-compose.yml.j2", dest: "{{ traefik_config_directory }}/docker-compose.yml" }
+    - { src: "env.j2", dest: "{{ traefik_config_directory }}/.env" }
+    - { src: "middlewares.yml.j2", dest: "{{ traefik_config_directory }}/dynamic/middlewares.yml" }
+    - { src: "certificates.yml.j2", dest: "{{ traefik_config_directory }}/dynamic/certificates.yml" }
+    - { src: "dynamic/wildcard.yml.j2", dest: "{{ traefik_config_directory }}/dynamic/wildcard.yml" }
+    - { src: "dynamic/lan-services.yml.j2", dest: "{{ traefik_config_directory }}/dynamic/lan-services.yml" }
+
+- name: Deploy Traefik container
+  community.docker.docker_compose_v2:
+    project_src: "{{ traefik_config_directory }}"
+    state: present
+    pull: always  # Always pull the latest image
+    recreate: always  # Force recreation to apply the new image version
+  register: traefik_deploy_result
+
+- name: Show Traefik deployment result
+  ansible.builtin.debug:
+    var: traefik_deploy_result
+    verbosity: 1

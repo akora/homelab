@@ -1,0 +1,12 @@
+---
+# Portainer Agent Deployment Playbook
+# Deploys Portainer agents on all Raspberry Pi nodes
+
+- name: Deploy Portainer Agents on Raspberry Pi nodes
+  hosts: raspberry_pi
+  become: true
+  tags:
+    - portainer
+    - portainer-agent
+  roles:
+    - portainer-agent
