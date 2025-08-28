@@ -1,0 +1,32 @@
+---
+# Default variables for common role
+
+# User configuration
+admin_user: akora
+
+# System configuration
+timezone: UTC
+locale: en_US.UTF-8
+locale_encoding: UTF-8
+
+# Common packages to install on all servers
+common_packages:
+  - vim
+  - htop
+  - btop
+  - git
+  - curl
+  - wget
+  - unzip
+  - net-tools
+  - ntp
+  - tree
+  - nmap
+  - rsync
+  - locales
+
+# SSH configuration
+ssh_permit_root_login: "no"
+ssh_password_authentication: "no"
+ssh_pubkey_authentication: "yes"
+ssh_port: 22

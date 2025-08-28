@@ -1,0 +1,50 @@
+---
+# Argon40 case setup for Raspberry Pi 4 devices
+
+- name: Check if Argon ONE script is already installed
+  stat:
+    path: /usr/bin/argonone-config
+  register: argon_config
+  tags: ['argon40']
+
+- name: Download Argon40 installation script if not already installed
+  become: true
+  get_url:
+    url: https://download.argon40.com/argon1.sh
+    dest: /tmp/argon1.sh
+    mode: '0755'
+  when: not argon_config.stat.exists
+  tags: ['argon40', 'download']
+
+- name: Run Argon40 installation script
+  become: true
+  command: /bin/bash /tmp/argon1.sh
+  args:
+    creates: /usr/bin/argonone-config
+  register: argon_install
+  when: not argon_config.stat.exists
+  tags: ['argon40', 'install']
+
+- name: Verify Argon40 service is running
+  become: true
+  systemd:
+    name: argononed
+    state: started
+    enabled: yes
+  register: argon_service
+  tags: ['argon40', 'service']
+
+- name: Show Argon40 installation status
+  debug:
+    msg: "Argon40 case software {{ 'is already installed' if argon_config.stat.exists else 'has been installed' }}"
+  tags: ['argon40', 'status']
+
+- name: Configure Argon40 fan settings
+  become: true
+  template:
+    src: argononed.conf.j2
+    dest: /etc/argononed.conf
+    mode: '0644'
+  notify: restart argononed
+  when: argon_config.stat.exists or argon_install.changed
+  tags: ['argon40', 'config']

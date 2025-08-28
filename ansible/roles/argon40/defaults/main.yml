@@ -1,0 +1,5 @@
+---
+# Default variables for argon40 role
+
+# User configuration
+admin_user: akora

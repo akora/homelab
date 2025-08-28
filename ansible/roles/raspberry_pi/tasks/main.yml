@@ -1,0 +1,76 @@
+---
+# Raspberry Pi specific configuration tasks
+
+- name: Check boot config location
+  become: true
+  stat:
+    path: "{{ item }}"
+  with_items:
+    - /boot/firmware/config.txt
+    - /boot/config.txt
+  register: boot_config_check
+  tags: ['raspberry_pi', 'config']
+
+- name: Set boot config path variable
+  set_fact:
+    boot_config_path: "{{ '/boot/firmware/config.txt' if boot_config_check.results[0].stat.exists else '/boot/config.txt' }}"
+  tags: ['raspberry_pi', 'config']
+
+- name: Backup config.txt
+  become: true
+  copy:
+    src: "{{ boot_config_path }}"
+    dest: "{{ boot_config_path }}.backup"
+    remote_src: yes
+    owner: root
+    group: root
+    mode: '0644'
+  tags: ['raspberry_pi', 'wifi', 'bluetooth']
+
+- name: Block WiFi and Bluetooth in boot config
+  become: true
+  lineinfile:
+    path: "{{ boot_config_path }}"
+    line: "{{ item }}"
+    state: present
+  with_items:
+    - "dtoverlay=disable-wifi"
+    - "dtoverlay=disable-bt"
+  register: config_changed
+  tags: ['raspberry_pi', 'wifi', 'bluetooth']
+
+- name: Disable WiFi related services
+  become: true
+  systemd:
+    name: "{{ item }}"
+    state: stopped
+    enabled: no
+  with_items:
+    - wpa_supplicant.service
+  tags: ['raspberry_pi', 'wifi']
+
+- name: Disable Bluetooth related services
+  become: true
+  systemd:
+    name: "{{ item }}"
+    state: stopped
+    enabled: no
+  with_items:
+    - bluetooth.service
+  failed_when: false
+  tags: ['raspberry_pi', 'bluetooth']
+
+- name: Add Raspberry Pi-specific packages
+  become: true
+  package:
+    name:
+      - rfkill
+      - libraspberrypi-bin
+    state: present
+  tags: ['raspberry_pi', 'packages']
+
+- name: Reboot notification
+  debug:
+    msg: "WiFi and Bluetooth will be completely disabled after reboot."
+  when: config_changed.changed
+  tags: ['raspberry_pi', 'wifi', 'bluetooth']

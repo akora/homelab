@@ -1,0 +1,94 @@
+---
+# Common role tasks - applies to all servers
+
+- name: Disable unattended-upgrades service before package operations
+  become: true
+  systemd:
+    name: unattended-upgrades
+    state: stopped
+    enabled: no
+  notify:
+    - enable unattended-upgrades
+  tags: ['update', 'upgrade']
+
+- name: Update package cache
+  become: true
+  package:
+    update_cache: yes
+  tags: ['update']
+
+- name: Upgrade all packages
+  become: true
+  package:
+    upgrade: safe
+  tags: ['update', 'upgrade']
+
+- name: Install common packages
+  become: true
+  package:
+    name: "{{ common_packages }}"
+    state: present
+  tags: ['packages']
+
+- name: Configure locale
+  become: true
+  locale_gen:
+    name: "{{ locale }}"
+    state: present
+  tags: ['locale']
+
+- name: Set system locale
+  become: true
+  lineinfile:
+    path: /etc/default/locale
+    line: "LANG={{ locale }}"
+    create: yes
+  tags: ['locale']
+
+- name: Set timezone to UTC
+  become: true
+  timezone:
+    name: "{{ timezone }}"
+  tags: ['timezone']
+
+- name: Ensure sudo is installed
+  become: true
+  package:
+    name: sudo
+    state: present
+  tags: ['sudo']
+
+- name: Configure password-less sudo for admin user
+  become: true
+  template:
+    src: sudoers.j2
+    dest: /etc/sudoers.d/{{ admin_user }}
+    validate: 'visudo -cf %s'
+    mode: '0440'
+  tags: ['sudo']
+
+- name: Secure SSH server
+  become: true
+  template:
+    src: sshd_config.j2
+    dest: /etc/ssh/sshd_config
+    mode: '0644'
+    validate: '/usr/sbin/sshd -t -f %s'
+  notify: restart ssh
+  tags: ['ssh', 'security']
+
+- name: Set kernel parameters for security
+  become: true
+  sysctl:
+    name: "{{ item.key }}"
+    value: "{{ item.value }}"
+    state: present
+    reload: yes
+  with_items:
+    - { key: 'net.ipv4.conf.all.accept_redirects', value: '0' }
+    - { key: 'net.ipv4.conf.default.accept_redirects', value: '0' }
+    - { key: 'net.ipv4.conf.all.secure_redirects', value: '0' }
+    - { key: 'net.ipv4.conf.default.secure_redirects', value: '0' }
+    - { key: 'net.ipv4.conf.all.accept_source_route', value: '0' }
+    - { key: 'net.ipv4.conf.default.accept_source_route', value: '0' }
+  tags: ['security', 'kernel']

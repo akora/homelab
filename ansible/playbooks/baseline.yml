@@ -1,0 +1,34 @@
+---
+# Baseline configuration playbook for all homelab servers
+# This playbook sets up:
+# - Common packages and configurations
+# - Raspberry Pi-specific settings (WiFi/BT disabled)
+# - Argon40 case setup for Raspberry Pi 4 devices
+
+- name: Apply baseline configuration to all servers
+  hosts: homelab
+  become: true
+
+  pre_tasks:
+    - name: Create remote temporary directory for root
+      become: true
+      file:
+        path: /tmp/.ansible-root
+        state: directory
+        owner: root
+        group: root
+        mode: '0700'
+  roles:
+    - common
+
+- name: Configure Raspberry Pi specific settings
+  hosts: raspberry_pi
+  become: true
+  roles:
+    - raspberry_pi
+
+- name: Setup Argon40 case on Raspberry Pi 4 devices
+  hosts: raspberry_pi4
+  become: true
+  roles:
+    - argon40

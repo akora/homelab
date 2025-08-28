@@ -2,6 +2,8 @@
 
 (!) IMPORTANT NOTE: I am fully aware that I'm exposing my username, some local paths and my internal network structure in the documentation and in the codebase. This is for educational purposes, I am OK with it.
 
+To adjust the configuration to your own environment, please replace `akora` with your username and adjust the IP addresses and hostnames in the `hosts` file.
+
 Let's begin!
 
 ## Generate SSH keypair
@@ -50,3 +52,36 @@ Update `ansible.cfg` to enable `host_key_checking`:
 ```ini
 host_key_checking = True
 ```
+
+## Check OS versions
+
+```bash
+ansible all -m shell -a 'cat /etc/lsb-release | grep DISTRIB_DESCRIPTION'
+```
+
+At the time of writing, all hosts are running Ubuntu 24.04.3 LTS.
+
+NEXT: reaching "baseline" level, Tier ONE!
+
+## Tier ONE: Baseline Configuration
+
+Run the baseline playbook:
+
+```bash
+ansible-playbook ansible/playbooks/baseline.yml --ask-become-pass
+```
+
+For this to run successfully, you need to provide the password for sudo.
+
+This will apply the following changes:
+
+- Update package cache
+- Upgrade all packages
+- Install common packages
+- Configure locale
+- Set system locale
+- Set timezone to UTC
+- Ensure sudo is installed
+- Configure password-less sudo for admin user
+- Secure SSH server
+- Set kernel parameters for security

@@ -1,0 +1,23 @@
+---
+# Common role handlers
+
+- name: restart ssh
+  become: true
+  service:
+    name: "{{ ssh_service_name }}"
+    state: restarted
+  vars:
+    ssh_service_name: "{{ 'ssh' if ansible_os_family == 'Debian' else 'sshd' }}"
+
+- name: reboot system
+  become: true
+  reboot:
+    reboot_timeout: 300
+    test_command: uptime
+
+- name: enable unattended-upgrades
+  become: true
+  systemd:
+    name: unattended-upgrades
+    state: started
+    enabled: yes

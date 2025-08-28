@@ -1,0 +1,10 @@
+---
+# Default variables for raspberry_pi role
+
+# User configuration
+admin_user: akora
+
+# System configuration
+timezone: UTC
+locale: en_US.UTF-8
+locale_encoding: UTF-8

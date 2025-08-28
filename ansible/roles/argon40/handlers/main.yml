@@ -1,0 +1,8 @@
+---
+# Argon40 role handlers
+
+- name: restart argononed
+  become: true
+  systemd:
+    name: argononed
+    state: restarted
