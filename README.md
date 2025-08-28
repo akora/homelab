@@ -71,6 +71,8 @@ Run the baseline playbook:
 ansible-playbook ansible/playbooks/baseline.yml
 ```
 
+For the very first run you may need to add `--ask-become-pass` to the command.
+
 This will apply the following changes:
 
 - Update package cache
@@ -89,7 +91,7 @@ This will apply the following changes:
 Run the Docker playbook:
 
 ```bash
-ansible-playbook -i ansible/inventory/hosts ansible/playbooks/docker.yml -u akora
+ansible-playbook -i ansible/inventory/hosts ansible/playbooks/docker.yml
 ```
 
 This will apply the following changes:

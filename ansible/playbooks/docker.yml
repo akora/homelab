@@ -4,5 +4,15 @@
 - name: Install and configure Docker on all servers
   hosts: homelab
   become: true
+
+  pre_tasks:
+    - name: Create remote temporary directory for root
+      become: true
+      file:
+        path: /tmp/.ansible-root
+        state: directory
+        owner: root
+        group: root
+        mode: '1777'
   roles:
     - docker
