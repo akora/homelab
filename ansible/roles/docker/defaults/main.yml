@@ -1,0 +1,10 @@
+---
+# Default variables for docker role
+
+# User configuration
+admin_user: akora
+
+# Docker configuration
+docker_compose_version: "2.39.2"  # Update to latest version as needed
+docker_users:
+  - "{{ admin_user }}"

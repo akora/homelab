@@ -1,0 +1,8 @@
+---
+# Docker installation playbook for all homelab servers
+
+- name: Install and configure Docker on all servers
+  hosts: homelab
+  become: true
+  roles:
+    - docker

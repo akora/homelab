@@ -1,0 +1,28 @@
+---
+# Docker installation tasks for x86_64 architecture (Zimaboard)
+
+- name: Add Docker GPG key for x86_64
+  become: true
+  apt_key:
+    url: https://download.docker.com/linux/ubuntu/gpg
+    state: present
+  when: ansible_distribution == 'Ubuntu'
+
+- name: Add Docker APT repository for x86_64
+  become: true
+  apt_repository:
+    repo: "deb [arch=amd64] https://download.docker.com/linux/ubuntu {{ ansible_distribution_release }} stable"
+    state: present
+    filename: docker
+  when: ansible_distribution == 'Ubuntu'
+
+- name: Install Docker packages on x86_64
+  become: true
+  apt:
+    name:
+      - docker-ce
+      - docker-ce-cli
+      - containerd.io
+    state: present
+    update_cache: yes
+  when: ansible_distribution == 'Ubuntu'
