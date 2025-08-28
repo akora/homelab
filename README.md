@@ -68,10 +68,8 @@ NEXT: reaching "baseline" level, Tier ONE!
 Run the baseline playbook:
 
 ```bash
-ansible-playbook ansible/playbooks/baseline.yml --ask-become-pass
+ansible-playbook ansible/playbooks/baseline.yml
 ```
-
-For this to run successfully, you need to provide the password for sudo.
 
 This will apply the following changes:
 
@@ -85,3 +83,29 @@ This will apply the following changes:
 - Configure password-less sudo for admin user
 - Secure SSH server
 - Set kernel parameters for security
+
+## Tier TWO: Docker Installation
+
+Run the Docker playbook:
+
+```bash
+ansible-playbook -i ansible/inventory/hosts ansible/playbooks/docker.yml -u akora
+```
+
+This will apply the following changes:
+
+- Install required packages for Docker
+- Install Docker packages on ARM
+- Install Docker packages on x86_64
+- Create docker group
+- Add admin user to docker group
+- Install Docker Compose
+- Create docker config directory
+- Configure Docker daemon
+- Enable and start Docker service
+- Verify Docker installation
+- Verify Docker Compose installation
+- Create Docker Compose files directory
+- Check existing ACLs for Docker Compose directory
+- Set additional permissions for Docker Compose directory
+- Ensure setfacl is installed (for ACL management)

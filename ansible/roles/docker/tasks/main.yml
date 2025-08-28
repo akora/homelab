@@ -1,0 +1,132 @@
+---
+# Docker role tasks - applies to all servers
+
+- name: Install required packages for Docker
+  become: true
+  package:
+    name:
+      - apt-transport-https
+      - ca-certificates 
+      - gnupg
+      - lsb-release
+    state: present
+  when: ansible_os_family == "Debian"
+  tags: ['docker', 'packages']
+
+# ARM and x86 have different installation methods, handle both architectures
+- name: Include ARM-specific Docker tasks
+  include_tasks: setup_docker_arm.yml
+  when: ansible_architecture.startswith('arm') or ansible_architecture.startswith('aarch')
+  tags: ['docker']
+
+- name: Include x86-specific Docker tasks
+  include_tasks: setup_docker_x86.yml
+  when: ansible_architecture == 'x86_64'
+  tags: ['docker']
+
+# Common Docker configuration tasks for all architectures
+- name: Create docker group
+  become: true
+  group:
+    name: docker
+    state: present
+  tags: ['docker']
+
+- name: Add admin user to docker group
+  become: true
+  user:
+    name: "{{ admin_user }}"
+    groups: docker
+    append: yes
+  tags: ['docker']
+
+- name: Install Docker Compose
+  become: true
+  get_url:
+    url: "https://github.com/docker/compose/releases/download/v{{ docker_compose_version }}/docker-compose-{{ ansible_system }}-{{ ansible_architecture }}"
+    dest: /usr/local/bin/docker-compose
+    mode: '0755'
+  tags: ['docker', 'docker-compose']
+
+- name: Create docker config directory
+  become: true
+  file:
+    path: /etc/docker
+    state: directory
+    mode: '0755'
+  tags: ['docker', 'config']
+
+- name: Configure Docker daemon
+  become: true
+  template:
+    src: daemon.json.j2
+    dest: /etc/docker/daemon.json
+    mode: '0644'
+  notify: restart docker
+  tags: ['docker', 'config']
+
+- name: Enable and start Docker service
+  become: true
+  systemd:
+    name: docker
+    state: started
+    enabled: yes
+  tags: ['docker', 'service']
+
+- name: Verify Docker installation
+  become: true
+  command: docker --version
+  register: docker_version
+  changed_when: false
+  tags: ['docker', 'verify']
+
+- name: Display Docker version
+  debug:
+    var: docker_version.stdout
+  tags: ['docker', 'verify']
+
+- name: Verify Docker Compose installation
+  become: true
+  command: docker-compose --version
+  register: docker_compose_version_output
+  changed_when: false
+  tags: ['docker', 'verify']
+
+- name: Display Docker Compose version
+  debug:
+    var: docker_compose_version_output.stdout
+  tags: ['docker', 'verify']
+
+- name: Ensure setfacl is installed (for ACL management)
+  become: true
+  package:
+    name: acl
+    state: present
+  when: ansible_os_family == "Debian"
+  tags: ['docker', 'config']
+
+- name: Create Docker Compose files directory
+  become: true
+  file:
+    path: /opt/docker
+    state: directory
+    owner: "{{ admin_user }}"
+    group: "{{ admin_user }}"
+    mode: '0755'
+  tags: ['docker', 'config']
+
+- name: Check existing ACLs for Docker Compose directory
+  become: true
+  command: "getfacl -p /opt/docker"
+  register: current_acls
+  changed_when: false
+  when: ansible_os_family == "Debian"
+  tags: ['docker', 'config']
+
+- name: Set additional permissions for Docker Compose directory
+  become: true
+  command: "setfacl -R -m u:{{ admin_user }}:rwx /opt/docker"
+  when: 
+    - ansible_os_family == "Debian"
+    - not (current_acls.stdout is search("user:" + admin_user + ":rwx"))
+  tags: ['docker', 'config']

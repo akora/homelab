@@ -24,6 +24,7 @@ common_packages:
   - nmap
   - rsync
   - locales
+  - acl
 
 # SSH configuration
 ssh_permit_root_login: "no"
