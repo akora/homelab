@@ -1,12 +1,20 @@
-# Homelab
+# Building a Multi-Tier Home Lab
+
+(!) IMPORTANT NOTE: I am fully aware that I'm exposing my username, some local paths and my internal network structure in the documentation and in the codebase. This is for educational purposes, I am OK with it.
+
+Let's begin!
 
 ## Generate SSH keypair
+
+The very first thing you need to do is to generate an SSH keypair. This will be used to enable passwordless authentication and will also allow Ansible to work seamlessly.
 
 ```bash
 ssh-keygen -t ed25519 -f "~/.ssh/homelab_ed25519" -N "" -C "homelab access key"
 ```
 
 ## Copy SSH key to remote hosts
+
+Copy the public key to all remote hosts. This is manual, no need for a fancy script at this stage.
 
 ```bash
 ssh-copy-id -i ~/.ssh/homelab_ed25519.pub akora@192.168.0.41
@@ -17,9 +25,13 @@ ssh-copy-id -i ~/.ssh/homelab_ed25519.pub akora@192.168.0.91
 
 ## Ping all hosts
 
+Test connectivity and make sure everything is working.
+
 ```bash
 ansible all -m ping
 ```
+
+You should see SUCCESS for each host.
 
 ## Security Hardening
 
