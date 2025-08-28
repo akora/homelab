@@ -32,3 +32,11 @@
   become: true
   roles:
     - argon40
+
+- name: Reboot all servers to apply changes
+  hosts: homelab
+  become: true
+  tasks:
+    - name: Reboot the server
+      reboot:
+        msg: "Rebooting to apply updates and configuration changes"
