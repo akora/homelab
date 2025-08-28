@@ -129,3 +129,38 @@ This will apply the following changes:
 - Deploy Traefik container
 
 If all goes well, you should be able to access the Traefik dashboard at <https://traefik.l4n.io>.
+
+Next: Portainer!
+
+Run the Portainer playbook:
+
+```bash
+ansible-playbook -i ansible/inventory/hosts ansible/playbooks/portainer.yml
+```
+
+This will apply the following changes:
+
+- Create Portainer directories
+- Stop and remove existing Portainer container if exists
+- Check if Docker network exists
+- Create Docker network if it doesn't exist
+- Create Portainer configuration files
+- Deploy Portainer container
+
+If all goes well, you should be able to access the Portainer dashboard at <https://portainer.l4n.io>.
+
+Next: Portainer Agent!
+
+Run the Portainer Agent playbook:
+
+```bash
+ansible-playbook -i ansible/inventory/hosts ansible/playbooks/portainer-agent.yml
+```
+
+This will apply the following changes:
+
+- Create Portainer Agent directories
+- Stop and remove existing Portainer Agent container if exists
+- Check if Docker network exists
+- Create Docker network if it doesn't exist
+- Deploy Portainer Agent container
