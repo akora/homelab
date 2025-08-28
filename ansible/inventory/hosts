@@ -1,0 +1,26 @@
+# Homelab Inventory
+
+[raspberry_pi]
+rpi4-01 ansible_host=192.168.0.41
+rpi4-02 ansible_host=192.168.0.42
+rpi5-01 ansible_host=192.168.0.51
+
+[raspberry_pi4]
+rpi4-01
+rpi4-02
+
+[raspberry_pi5]
+rpi5-01
+
+[zimaboard]
+zima-01 ansible_host=192.168.0.91
+
+[homelab:children]
+raspberry_pi
+zimaboard
+
+[arm_servers:children]
+raspberry_pi
+
+[x86_servers:children]
+zimaboard

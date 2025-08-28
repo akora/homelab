@@ -1,0 +1,11 @@
+# Ansible temporary files
+*.retry
+.ansible_facts_cache/
+
+# Local configuration files
+vault.yml
+vault.yaml
+
+# Private keys
+*.pem
+*ed25519*
