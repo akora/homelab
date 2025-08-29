@@ -1,0 +1,6 @@
+---
+- name: Restart docker-socket-proxy container
+  community.docker.docker_compose_v2:
+    project_src: "{{ docker_socket_proxy_config_directory }}"
+    state: present
+    recreate: always

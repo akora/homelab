@@ -1,0 +1,40 @@
+---
+# Docker Socket Proxy Docker Compose Configuration
+# This file is managed by Ansible - local changes will be overwritten
+
+services:
+  docker-socket-proxy:
+    image: {{ docker_socket_proxy_image }}
+    container_name: {{ docker_socket_proxy_container_name }}
+    restart: unless-stopped
+    privileged: true
+    ports:
+      - "{{ docker_socket_proxy_port }}:2375"
+    environment:
+      # Docker API access permissions
+      - CONTAINERS={{ docker_socket_proxy_allow_containers }}
+      - INFO={{ docker_socket_proxy_allow_info }}
+      - NETWORKS={{ docker_socket_proxy_allow_networks }}
+      - LOGS={{ docker_socket_proxy_allow_logs }}
+      - IMAGES={{ docker_socket_proxy_allow_images }}
+      - VOLUMES={{ docker_socket_proxy_allow_volumes }}
+      - POST={{ docker_socket_proxy_allow_post }}
+      - EVENTS=1  # Required for events endpoint
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      # HAProxy state file
+      - {{ docker_socket_proxy_data_directory }}:/var/lib/haproxy
+      # Custom HAProxy configuration
+      - "{{ docker_socket_proxy_config_directory }}/haproxy.cfg.template:/usr/local/etc/haproxy/haproxy.cfg.template:ro"
+    labels:
+      # Watchtower Update Control
+      - "com.centurylinklabs.watchtower.enable=true"
+      
+      # Homepage Auto-Discovery
+      - "homepage.group={{ inventory_hostname }}"
+      - "homepage.name=Docker Socket Proxy"
+      - "homepage.icon=si-docker"
+      - "homepage.href=http://{{ ansible_default_ipv4.address }}:{{ docker_socket_proxy_port }}"
+      - "homepage.description=Docker API Proxy for {{ inventory_hostname }}"
+
+# No need for named volumes as we're using a host directory

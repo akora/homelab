@@ -1,0 +1,25 @@
+---
+# Docker Socket Proxy Role Default Variables
+
+# Deployment settings
+docker_socket_proxy_image: "tecnativa/docker-socket-proxy:latest"
+docker_socket_proxy_container_name: "docker-socket-proxy"
+docker_socket_proxy_config_directory: "/opt/docker/docker-socket-proxy"
+docker_socket_proxy_data_directory: "/opt/docker/docker-socket-proxy/data"
+
+# Use a different port for each server to avoid conflicts
+# Base port is 2375, but we'll use inventory_hostname_short to calculate a unique port
+# This will be overridden in host_vars if needed
+docker_socket_proxy_base_port: 2375
+
+# Calculate a port based on the server name (will be set in tasks)
+docker_socket_proxy_port: "{{ docker_socket_proxy_base_port }}"
+
+# Security settings - enable what's needed for Dozzle and Watchtower
+docker_socket_proxy_allow_containers: "1"  # Required to list containers
+docker_socket_proxy_allow_info: "1"        # Required for system info
+docker_socket_proxy_allow_networks: "1"    # Required for network info
+docker_socket_proxy_allow_logs: "1"        # Required for container logs
+docker_socket_proxy_allow_images: "1"      # Required for Watchtower to check images
+docker_socket_proxy_allow_volumes: "1"     # Required for Watchtower container management
+docker_socket_proxy_allow_post: "1"        # Required for Watchtower to start/stop containers

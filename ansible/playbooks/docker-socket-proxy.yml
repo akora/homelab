@@ -1,0 +1,39 @@
+---
+# Redeploy Docker Socket Proxy with standard port configuration
+# This playbook first cleans up existing Docker Socket Proxy instances
+# and then deploys new ones with the standard port configuration
+
+- name: Cleanup existing Docker Socket Proxy instances
+  hosts: homelab
+  become: true
+  gather_facts: false
+  
+  tasks:
+    - name: Stop and remove Docker Socket Proxy container
+      community.docker.docker_container:
+        name: docker-socket-proxy
+        state: absent
+        force_kill: true
+      ignore_errors: true
+      
+    - name: Remove Docker Socket Proxy network
+      community.docker.docker_network:
+        name: docker-socket-proxy_default
+        state: absent
+      ignore_errors: true
+      
+    - name: Remove Docker Socket Proxy configuration directory
+      ansible.builtin.file:
+        path: "/opt/docker/docker-socket-proxy"
+        state: absent
+      ignore_errors: true
+
+- name: Deploy Docker Socket Proxy with standard port
+  hosts: homelab
+  become: true
+  gather_facts: true
+  
+  tasks:
+    - name: Include Docker Socket Proxy role
+      ansible.builtin.include_role:
+        name: docker-socket-proxy

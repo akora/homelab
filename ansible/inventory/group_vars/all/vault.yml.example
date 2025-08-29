@@ -1,0 +1,42 @@
+---
+# Centralized Vault - ALL sensitive data for homelab
+# In production, encrypt this file with: ansible-vault encrypt ansible/group_vars/all/vault.yml
+# This is an example file, please copy it to vault.yml and fill in your actual values.
+
+# =============================================================================
+# TRAEFIK CREDENTIALS
+# =============================================================================
+# Email for your Cloudflare account
+vault_traefik_cloudflare_email: "your-cloudflare-email@example.com"
+# API Token for Cloudflare DNS
+vault_traefik_cloudflare_dns_api_token: "your-cloudflare-dns-api-token"
+# Email for Let's Encrypt SSL certificates
+vault_traefik_letsencrypt_email: "your-letsencrypt-email@example.com"
+
+# =============================================================================
+# PORTAINER CREDENTIALS
+# =============================================================================
+# Your Portainer Edge Agent key
+vault_portainer_agent_edge_key: "your-portainer-edge-key"
+
+# =============================================================================
+# ENVIRONMENT CONFIGURATION
+# =============================================================================
+# Domain and infrastructure settings
+vault_domain: "your-domain.com"
+vault_admin_email: "your-admin-email@example.com"
+vault_lan_subnet: "192.168.1.0/24"
+
+# Host IP addresses
+vault_host_ips:
+  rpi4_01: "192.168.1.41"
+  rpi4_02: "192.168.1.42"
+  rpi5_01: "192.168.1.51"
+  zima_01: "192.168.1.91"
+  router: "192.168.1.1"
+  nas: "192.168.1.32"
+
+# Service domains
+vault_service_domains:
+  traefik: "traefik.your-domain.com"
+  portainer: "portainer.your-domain.com"

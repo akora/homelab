@@ -164,3 +164,17 @@ This will apply the following changes:
 - Check if Docker network exists
 - Create Docker network if it doesn't exist
 - Deploy Portainer Agent container
+
+Next: Docker Socket Proxy!
+
+```bash
+ansible-playbook ansible/playbooks/docker-socket-proxy.yml
+```
+
+This will apply the following changes:
+
+- Create Docker Socket Proxy directories
+- Stop and remove existing Docker Socket Proxy container if exists
+- Check if Docker network exists
+- Create Docker network if it doesn't exist
+- Deploy Docker Socket Proxy container

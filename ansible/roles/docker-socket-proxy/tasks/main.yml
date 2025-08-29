@@ -1,0 +1,51 @@
+---
+# Docker Socket Proxy Role Tasks
+
+- name: Ensure Docker is installed
+  ansible.builtin.include_tasks: check_docker.yml
+
+# Use standard Docker API port for all servers (different IPs = no conflicts)
+- name: Set standard port for Docker Socket Proxy
+  ansible.builtin.set_fact:
+    docker_socket_proxy_port: "{{ docker_socket_proxy_base_port }}"
+
+- name: Create Docker Socket Proxy directories
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    mode: "0755"
+  loop:
+    - "/opt/docker/docker-socket-proxy"
+    - "{{ docker_socket_proxy_data_directory }}"
+
+- name: Create HAProxy state file
+  ansible.builtin.file:
+    path: "{{ docker_socket_proxy_data_directory }}/server-state"
+    state: touch
+    mode: "0644"
+
+- name: Create Docker Socket Proxy configuration files
+  ansible.builtin.template:
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
+    owner: root
+    group: root
+    mode: "0644"
+  loop:
+    - { src: 'docker-compose.yml.j2', dest: '{{ docker_socket_proxy_config_directory }}/docker-compose.yml' }
+    - { src: 'haproxy.cfg.template.j2', dest: '{{ docker_socket_proxy_config_directory }}/haproxy.cfg.template' }
+  notify:
+    - Restart docker-socket-proxy container
+
+- name: Deploy Docker Socket Proxy container
+  community.docker.docker_compose_v2:
+    project_src: "/opt/docker/docker-socket-proxy"
+    state: present
+    pull: always
+    recreate: always
+  register: docker_socket_proxy_deploy_result
+
+- name: Show Docker Socket Proxy deployment result
+  ansible.builtin.debug:
+    var: docker_socket_proxy_deploy_result
+    verbosity: 1
