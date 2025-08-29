@@ -178,3 +178,19 @@ This will apply the following changes:
 - Check if Docker network exists
 - Create Docker network if it doesn't exist
 - Deploy Docker Socket Proxy container
+
+Next: Homepage!
+
+```bash
+ansible-playbook ansible/playbooks/homepage.yml
+```
+
+This will apply the following changes:
+
+- Create Homepage directories
+- Stop and remove existing Homepage container if exists
+- Check if Docker network exists
+- Create Docker network if it doesn't exist
+- Deploy Homepage container
+
+If all goes well, you should be able to access the Homepage dashboard at <https://home.l4n.io>.
