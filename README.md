@@ -165,6 +165,8 @@ This will apply the following changes:
 - Create Docker network if it doesn't exist
 - Deploy Portainer Agent container
 
+## Tier FOUR: Homepage (& Docker Socket Proxy) Installation
+
 Next: Docker Socket Proxy!
 
 ```bash
