@@ -1,0 +1,9 @@
+---
+# Homepage services configuration
+# Documentation: https://gethomepage.dev/latest/configs/services/
+
+{% if homepage_services is defined %}
+{{ homepage_services | to_nice_yaml }}
+{% else %}
+# Intentionally empty to rely on Docker auto-discovery
+{% endif %}

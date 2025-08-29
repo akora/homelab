@@ -1,0 +1,42 @@
+---
+# Homepage settings.yaml
+# Full documentation: https://gethomepage.dev/latest/configs/settings/
+
+title: {{ homepage_title | default('Homelab Dashboard') }}
+base: /
+language: {{ homepage_language | default('en') }}
+headerStyle: {{ homepage_header_style | default('clean') }}
+
+# layout:
+  # {{ homepage_layout | default('auto') }}
+
+layout:
+  rpi4-01:
+    style: column
+  rpi4-02:
+    style: column
+
+theme: {{ homepage_theme | default('dark') }}
+
+background:
+  image: {{ homepage_background_image | default('') }}
+  blur: {{ homepage_background_blur | default('false') }}
+  saturate: {{ homepage_background_saturate | default('100') }}
+  brightness: {{ homepage_background_brightness | default('100') }}
+
+quicklaunch:
+  searchEngine: {{ homepage_search_engine | default('duckduckgo') }}
+  hideInternetSearch: {{ homepage_hide_search | default('false') }}
+  showCurrentTime: {{ homepage_show_time | default('true') }}
+  pinned: {{ homepage_pinned_searches | default('[]') }}
+
+# Docker configuration moved to separate docker.yaml file
+
+# Cache and refresh settings
+cache:
+  enabled: {{ homepage_enable_cache | default('true') }}
+  interval: {{ homepage_cache_interval | default('60') }}
+
+providers:
+  openweathermap: ***REMOVED***
+  weatherapi: weatherapiapikey

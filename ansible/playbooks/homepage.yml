@@ -1,0 +1,19 @@
+---
+- name: Set up Homepage Dashboard
+  hosts: zima-01  # Specifically targeting zima-01 as requested
+  become: true
+  
+  roles:
+    - homepage
+  
+  tasks:
+    - name: Ensure Homepage is running
+      shell: docker ps | grep homepage
+      register: homepage_status
+      changed_when: false
+      failed_when: false
+      
+    - name: Display Homepage URL
+      debug:
+        msg: "Homepage dashboard is available at https://{{ homepage_domain }}"
+      when: homepage_status.rc == 0

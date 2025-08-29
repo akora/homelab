@@ -1,0 +1,16 @@
+---
+# Homepage bookmarks.yaml
+# Full documentation: https://gethomepage.dev/latest/configs/bookmarks/
+
+{% if homepage_bookmarks is defined %}
+{{ homepage_bookmarks | to_nice_yaml }}
+{% else %}
+# Default bookmarks configuration
+- Local LAN:
+  - Router:
+    - abbr: RO
+      href: https://router.{{ vault_domain }}/webman/index.cgi
+  - NAS:
+    - abbr: NA
+      href: https://nas.{{ vault_domain }}/
+{% endif %}

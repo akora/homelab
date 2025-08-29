@@ -1,0 +1,15 @@
+---
+# Homepage Docker configuration - multi-node discovery
+# Documentation: https://gethomepage.dev/latest/configs/docker/
+
+# Multi-node Docker discovery
+{% for hostname, config in homepage_docker_hosts.items() %}
+{% if hostname != 'local' %}
+{{ hostname }}:
+  host: {{ config.host }}
+  port: {{ config.port }}
+{% endif %}
+{% endfor %}
+
+# Refresh interval for Docker service discovery
+refresh_interval: {{ homepage_docker_refresh_interval }}

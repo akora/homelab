@@ -1,0 +1,32 @@
+---
+# Homepage widgets.yaml
+# Full documentation: https://gethomepage.dev/latest/configs/widgets/
+
+{% if homepage_widgets is defined %}
+{{ homepage_widgets | to_nice_yaml }}
+{% else %}
+# Default widgets configuration
+- resources:
+    cpu: true
+    cputemp: true
+    uptime: true
+    memory: true
+    disk: /
+
+- datetime:
+    format:
+      dateStyle: long
+      timeStyle: short
+    refreshInterval: 60000
+
+- openweathermap:
+    label: Budapest #optional
+    latitude: 47.4979
+    longitude: 19.0402
+    units: metric # or imperial
+    provider: openweathermap
+    apiKey: # required only if not using provider, this reveals api key in requests
+    cache: 5 # Time in minutes to cache API responses, to stay within limits
+    format: # optional, Intl.NumberFormat options
+      maximumFractionDigits: 1
+{% endif %}

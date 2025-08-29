@@ -1,0 +1,72 @@
+---
+# Homepage container settings
+homepage_image: "ghcr.io/gethomepage/homepage:v1.4.0"
+homepage_domain: "{{ vault_service_domains.homepage }}"
+homepage_port: 3000
+homepage_docker_network: "traefik-net"  # This should match your Traefik network name
+homepage_traefik_container_name: "traefik"  # Name of the Traefik container for widget connection
+
+# Docker auto-discovery settings
+homepage_enable_docker_discovery: true
+homepage_enable_docker: true
+homepage_docker_socket: "tcp://localhost:2375"  # Use TCP connection locally as well
+homepage_augment_containers: true
+homepage_show_labels: true
+homepage_docker_refresh_interval: 300  # Docker refresh interval in seconds
+
+# Settings for multi-node discovery
+homepage_multi_node_discovery: true
+homepage_docker_hosts:
+  local:
+    host: "localhost"
+    port: 2375
+  rpi4-01:
+    host: "{{ vault_host_ips.rpi4_01 }}"
+    port: 2375
+  rpi4-02:
+    host: "{{ vault_host_ips.rpi4_02 }}"
+    port: 2375
+  rpi5-01:
+    host: "{{ vault_host_ips.rpi5_01 }}"
+    port: 2375
+  zima-01:
+    host: "{{ vault_host_ips.zima_01 }}"
+    port: 2375
+
+# Homepage UI settings
+homepage_title: "{{ vault_domain }} Homelab"
+homepage_language: "en"
+homepage_header_style: "clean"
+homepage_layout: "auto"
+homepage_theme: "dark"
+homepage_show_time: true
+homepage_hide_search: true
+homepage_search_engine: "duckduckgo"
+
+# Cache settings
+homepage_enable_cache: true
+homepage_cache_interval: 60
+
+# Homepage config: uncomment and customize these to override template defaults
+# homepage_bookmarks: |
+#   - Self-Hosted:
+#     - Traefik:
+#         abbr: TR
+#         href: https://traefik.{{ vault_domain }}
+#     - Homepage:
+#         abbr: HP
+#         href: https://home.{{ vault_domain }}
+#
+# homepage_services: |
+#   - Infrastructure:
+#     - Traefik:
+#         href: https://traefik.{{ vault_domain }}
+#         description: Reverse Proxy
+#         icon: traefik
+#
+# homepage_widgets: |
+#   - resources:
+#       cpu: true
+#       memory: true
+#   - datetime:
+#       timeFormat: "H:mm:ss"
