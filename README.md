@@ -4,6 +4,8 @@
 
 To adjust the configuration to your own environment, please replace `akora` with your username and adjust the IP addresses and hostnames in the `hosts` file.
 
+Everything sensitive is stored in the `vault.yml` file (not included in the repository). Please check the `vault.yml.example` file for more details.
+
 Let's begin!
 
 ## Generate SSH keypair
@@ -130,6 +132,8 @@ This will apply the following changes:
 
 If all goes well, you should be able to access the Traefik dashboard at <https://traefik.l4n.io>.
 
+![Traefik Dashboard](assets/docs/images/Screenshot-Tier-ONE-TWO-THREE-FOUR-Traefik.png)
+
 Next: Portainer!
 
 Run the Portainer playbook:
@@ -148,6 +152,8 @@ This will apply the following changes:
 - Deploy Portainer container
 
 If all goes well, you should be able to access the Portainer dashboard at <https://portainer.l4n.io>.
+
+![Portainer Dashboard](assets/docs/images/Screenshot-Tier-ONE-TWO-THREE-FOUR-Portainer.png)
 
 Next: Portainer Agent!
 
@@ -196,3 +202,7 @@ This will apply the following changes:
 - Deploy Homepage container
 
 If all goes well, you should be able to access the Homepage dashboard at <https://home.l4n.io>.
+
+![Homepage Dashboard](assets/docs/images/Screenshot-Tier-ONE-TWO-THREE-FOUR-Homepage.png)
+
+Finally! We've got something to look at! :)
