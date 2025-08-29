@@ -50,8 +50,8 @@
     volumes:
       - "/opt/docker/homepage/config:/app/config"
     env:
-      DOCKER_HOST: "{{ homepage_docker_socket }}"
       TZ: "UTC"
+      DOCKER_HOST: "{{ homepage_docker_socket }}"
       HOMEPAGE_CONFIG_DIR: "/app/config"
       HOMEPAGE_DOCKER_ENABLE: "true"
       HOMEPAGE_DOCKER_REFRESH_INTERVAL: "{{ homepage_docker_refresh_interval | default(300) }}"

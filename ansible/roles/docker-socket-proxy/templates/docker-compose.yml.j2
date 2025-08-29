@@ -26,6 +26,8 @@ services:
       - {{ docker_socket_proxy_data_directory }}:/var/lib/haproxy
       # Custom HAProxy configuration
       - "{{ docker_socket_proxy_config_directory }}/haproxy.cfg.template:/usr/local/etc/haproxy/haproxy.cfg.template:ro"
+    networks:
+      - traefik-net
     labels:
       # Watchtower Update Control
       - "com.centurylinklabs.watchtower.enable=true"
@@ -37,4 +39,6 @@ services:
       - "homepage.href=http://{{ ansible_default_ipv4.address }}:{{ docker_socket_proxy_port }}"
       - "homepage.description=Docker API Proxy for {{ inventory_hostname }}"
 
-# No need for named volumes as we're using a host directory
+networks:
+  traefik-net:
+    external: true

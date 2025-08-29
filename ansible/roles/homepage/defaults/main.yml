@@ -9,7 +9,7 @@ homepage_traefik_container_name: "traefik"  # Name of the Traefik container for 
 # Docker auto-discovery settings
 homepage_enable_docker_discovery: true
 homepage_enable_docker: true
-homepage_docker_socket: "tcp://localhost:2375"  # Use TCP connection locally as well
+homepage_docker_socket: "tcp://docker-socket-proxy:2375"  # Use TCP connection locally as well
 homepage_augment_containers: true
 homepage_show_labels: true
 homepage_docker_refresh_interval: 300  # Docker refresh interval in seconds
@@ -17,9 +17,6 @@ homepage_docker_refresh_interval: 300  # Docker refresh interval in seconds
 # Settings for multi-node discovery
 homepage_multi_node_discovery: true
 homepage_docker_hosts:
-  local:
-    host: "localhost"
-    port: 2375
   rpi4-01:
     host: "{{ vault_host_ips.rpi4_01 }}"
     port: 2375
@@ -28,9 +25,6 @@ homepage_docker_hosts:
     port: 2375
   rpi5-01:
     host: "{{ vault_host_ips.rpi5_01 }}"
-    port: 2375
-  zima-01:
-    host: "{{ vault_host_ips.zima_01 }}"
     port: 2375
 
 # Homepage UI settings
