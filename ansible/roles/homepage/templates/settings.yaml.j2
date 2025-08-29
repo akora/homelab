@@ -38,5 +38,4 @@ cache:
   interval: {{ homepage_cache_interval | default('60') }}
 
 providers:
-  openweathermap: ***REMOVED***
-  weatherapi: weatherapiapikey
+  openweathermap: "{{ vault_openweather_api_key }}"

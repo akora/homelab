@@ -50,7 +50,7 @@
     volumes:
       - "/opt/docker/homepage/config:/app/config"
     env:
-      HOMEPAGE_VAR_DOCKER_SOCKET: "{{ homepage_docker_socket }}"
+      DOCKER_HOST: "{{ homepage_docker_socket }}"
       TZ: "UTC"
       HOMEPAGE_CONFIG_DIR: "/app/config"
       HOMEPAGE_DOCKER_ENABLE: "true"
