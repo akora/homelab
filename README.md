@@ -2,11 +2,13 @@
 
 (!) IMPORTANT NOTE: I am fully aware that I'm exposing my username, some local paths and my internal network structure in the documentation and in the codebase. This is for educational purposes, I am OK with it.
 
-To adjust the configuration to your own environment, please replace `akora` with your username and adjust the IP addresses and hostnames in the `hosts` file.
+To adjust the configuration to your own environment, please replace `akora` with your username and adjust the IP addresses and hostnames in the `inventory/hosts` file.
 
-Everything sensitive is stored in the `vault.yml` file (not included in the repository). Please check the `vault.yml.example` file for more details.
+Everything sensitive is stored in the `vault.yml` file (not included in the repository). Please check the `vault.yml.example` file for more details and examples.
 
-Let's begin!
+The domain name I'm using locally is `l4n.io`. I own this domain and in Cloudflare this domain name is pointing to the local IP address where Traefik is running.
+
+With all this said, let's begin!
 
 ## Generate SSH keypair
 
@@ -35,11 +37,11 @@ Test connectivity and make sure everything is working.
 ansible all -m ping
 ```
 
-You should see SUCCESS for each host.
+You should see SUCCESS for each host. ping/pong
 
 ## Security Hardening
 
-To avoid man-in-the-middle attacks, it's important to enable host key checking.
+To avoid man-in-the-middle attacks, it's important to enable host key checking. Not critical for a home lab, but recommended.
 
 ### Add Host Keys to known_hosts
 
@@ -56,6 +58,8 @@ host_key_checking = True
 ```
 
 ## Check OS versions
+
+This is just another test (of connectivity) and a confirmation that we have matching OS versions on all hosts.
 
 ```bash
 ansible all -m shell -a 'cat /etc/lsb-release | grep DISTRIB_DESCRIPTION'
@@ -80,7 +84,6 @@ This will apply the following changes:
 - Update package cache
 - Upgrade all packages
 - Install common packages
-- Configure locale
 - Set system locale
 - Set timezone to UTC
 - Ensure sudo is installed
@@ -99,8 +102,8 @@ ansible-playbook -i ansible/inventory/hosts ansible/playbooks/docker.yml
 This will apply the following changes:
 
 - Install required packages for Docker
-- Install Docker packages on ARM
-- Install Docker packages on x86_64
+  - Install Docker packages on ARM
+  - Install Docker packages on x86_64
 - Create docker group
 - Add admin user to docker group
 - Install Docker Compose
@@ -134,6 +137,8 @@ If all goes well, you should be able to access the Traefik dashboard at <https:/
 
 ![Traefik Dashboard](assets/docs/images/Screenshot-Tier-ONE-TWO-THREE-FOUR-Traefik.png)
 
+Note on this screenshot that I have the exisiting services all configured, plus I have a few "static" routing configured as well, for my router and for my NAS.
+
 Next: Portainer!
 
 Run the Portainer playbook:
@@ -155,6 +160,8 @@ If all goes well, you should be able to access the Portainer dashboard at <https
 
 ![Portainer Dashboard](assets/docs/images/Screenshot-Tier-ONE-TWO-THREE-FOUR-Portainer.png)
 
+Note on this screenshot that what's captured here is a state _AFTER_ I linked all standalone "agents" to be able to see and manage all of the other servers from one place.
+
 Next: Portainer Agent!
 
 Run the Portainer Agent playbook:
@@ -171,6 +178,8 @@ This will apply the following changes:
 - Create Docker network if it doesn't exist
 - Deploy Portainer Agent container
 
+Setting up the agents made it possible to link them to the main Portainer instance and manage them from one place.
+
 ## Tier FOUR: Homepage (& Docker Socket Proxy) Installation
 
 Next: Docker Socket Proxy!
@@ -186,6 +195,8 @@ This will apply the following changes:
 - Check if Docker network exists
 - Create Docker network if it doesn't exist
 - Deploy Docker Socket Proxy container
+
+This makes it possible for Homepage to auto-discover services running on the other servers.
 
 Next: Homepage!
 
@@ -206,3 +217,5 @@ If all goes well, you should be able to access the Homepage dashboard at <https:
 ![Homepage Dashboard](assets/docs/images/Screenshot-Tier-ONE-TWO-THREE-FOUR-Homepage.png)
 
 Finally! We've got something to look at! :)
+
+At this stage you should be able to see all the services running on all servers, nicely represented.
