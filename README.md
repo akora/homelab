@@ -1,6 +1,6 @@
 # Building a Multi-Tier Home Lab
 
-> [!WARNING]  
+> [!IMPORTANT]  
 > IMPORTANT NOTE: I am fully aware that I'm exposing my username, some local paths and my internal network structure in the documentation and in the codebase. This is for educational purposes, I am OK with it.
 
 To adjust the configuration to your own environment, please replace `akora` with your username and adjust the IP addresses and hostnames in the `inventory/hosts` file.
