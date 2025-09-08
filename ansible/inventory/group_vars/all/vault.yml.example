@@ -45,5 +45,6 @@ vault_service_domains:
 # =============================================================================
 # GITEA CREDENTIALS
 # =============================================================================
+vault_gitea_admin_username: "gitea-admin"
 vault_gitea_admin_password: "your-secure-gitea-admin-password"
 vault_gitea_admin_email: "your-gitea-admin-email@example.com"

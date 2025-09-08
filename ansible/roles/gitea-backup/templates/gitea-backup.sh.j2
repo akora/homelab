@@ -37,7 +37,8 @@ trap cleanup EXIT
 
 # Create a temporary directory for the dump inside the container
 log "Creating temporary backup directory inside container..."
-docker exec "${CONTAINER_NAME}" mkdir -p "${TEMP_DIR_IN_CONTAINER}"
+docker exec "${CONTAINER_NAME}" mkdir -p "${TEMP_DIR_IN_CONTAINER}/tmp"
+docker exec "${CONTAINER_NAME}" chown -R git:git "${TEMP_DIR_IN_CONTAINER}"
 
 # Run gitea dump
 log "Running gitea dump..."

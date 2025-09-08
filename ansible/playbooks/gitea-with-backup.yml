@@ -8,7 +8,7 @@
   
   vars:
     # Override default admin credentials (use vault in production)
-    gitea_admin_username: "admin"
+    gitea_admin_username: "{{ vault_gitea_admin_username }}"
     gitea_admin_password: "{{ vault_gitea_admin_password }}"
     gitea_admin_email: "{{ vault_gitea_admin_email }}"
     

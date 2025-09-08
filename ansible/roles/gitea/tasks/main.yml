@@ -12,6 +12,8 @@
   with_items:
     - "{{ gitea_data_directory }}"
     - "{{ gitea_config_directory }}"
+    - "{{ gitea_data_directory }}/git/repositories"
+    - "{{ gitea_data_directory }}/git/.ssh"
 
 - name: Deploy Gitea app.ini configuration
   ansible.builtin.template:
@@ -48,6 +50,14 @@
     src: docker-compose.yml.j2
     dest: "{{ gitea_config_directory }}/docker-compose.yml"
     mode: '0644'
+
+- name: Ensure correct ownership of Gitea data directory
+  ansible.builtin.file:
+    path: "{{ gitea_data_directory }}"
+    owner: "1000"
+    group: "1000"
+    recurse: yes
+    state: directory
 
 # We don't stop or remove the existing container to preserve data
 # Instead, we let Docker Compose handle container updates safely
@@ -108,6 +118,28 @@
   ansible.builtin.debug:
     var: gitea_deploy_result
   when: gitea_deploy_result.changed
+
+- name: Wait for Gitea to initialize
+  ansible.builtin.pause:
+    seconds: 15
+  when: gitea_deploy_result.changed
+
+- name: Check if Gitea admin user exists
+  ansible.builtin.shell:
+    cmd: "docker exec --user git {{ gitea_container_name }} /usr/local/bin/gitea admin user list | grep '\\s{{ gitea_admin_username }}\\s'"
+  register: admin_user_check
+  changed_when: false
+  failed_when: false
+
+- name: Create Gitea admin user
+  ansible.builtin.shell:
+    cmd: >
+      docker exec --user git {{ gitea_container_name }} /usr/local/bin/gitea admin user create
+      --username {{ gitea_admin_username }}
+      --password '{{ gitea_admin_password }}'
+      --email {{ gitea_admin_email }}
+      --admin
+  when: admin_user_check.rc != 0
 
 - name: Ensure Gitea is running
   ansible.builtin.shell: docker ps | grep {{ gitea_container_name }}

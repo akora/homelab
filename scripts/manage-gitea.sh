@@ -48,6 +48,7 @@ Commands:
   logs                Show Gitea logs
   list-backups        List available backups
   update              Update Gitea to latest version
+  reset-password      Reset the admin user's password
   help                Show this help message
 
 Examples:
@@ -102,13 +103,13 @@ restore_backup() {
     
     warn "This will restore Gitea from backup and replace current data!"
     read -p "Are you sure you want to continue? (yes/no): " confirm
-    if [ "$confirm" != "yes" ]; then
+    if [[ "$confirm" != "yes" && "$confirm" != "y" ]]; then
         info "Restore cancelled"
         exit 0
     fi
     
     log "Restoring Gitea from backup: $backup_file"
-    if ssh rpi5-01 "sudo /opt/backups/gitea/scripts/gitea-restore.sh $backup_file"; then
+    if ssh rpi5-01 "sudo /opt/backups/gitea/scripts/gitea-restore.sh $backup_file --force"; then
         log "Restore completed successfully!"
         info "Please verify that all data has been restored correctly"
     else
@@ -164,7 +165,7 @@ list_backups() {
 update_gitea() {
     warn "This will update Gitea to the latest version"
     read -p "Are you sure you want to continue? (yes/no): " confirm
-    if [ "$confirm" != "yes" ]; then
+    if [[ "$confirm" != "yes" && "$confirm" != "y" ]]; then
         info "Update cancelled"
         exit 0
     fi
@@ -179,6 +180,22 @@ update_gitea() {
     else
         error "Gitea update failed"
         warn "You may need to restore from backup if there are issues"
+        exit 1
+    fi
+}
+
+# Reset admin password
+reset_admin_password() {
+    log "Resetting Gitea admin password..."
+    local new_password=$(openssl rand -base64 16)
+
+    info "Setting a new random password for user 'akora'..."
+    if ssh rpi5-01 "docker exec --user git gitea /usr/local/bin/gitea admin user change-password --username akora --password '$new_password'"; then
+        log "Admin password has been reset successfully!"
+        info "Your new password for the 'akora' user is:"
+        echo -e "${YELLOW}${new_password}${NC}"
+    else
+        error "Failed to reset admin password"
         exit 1
     fi
 }
@@ -215,6 +232,9 @@ main() {
             ;;
         update)
             update_gitea
+            ;;
+        reset-password)
+            reset_admin_password
             ;;
         help|--help|-h)
             usage

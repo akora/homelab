@@ -89,14 +89,16 @@ fi
 log "Backup integrity verified"
 
 # Safety check - confirm restore
-echo "WARNING: This will completely replace your current Gitea installation!"
-echo "Backup file: $BACKUP_FILE"
-echo "Current data will be backed up to: ${DATA_DIR}_pre_restore_$(date +%Y%m%d_%H%M%S)"
-echo ""
-read -p "Are you sure you want to continue? (yes/no): " confirm
-if [ "$confirm" != "yes" ]; then
-    log "Restore cancelled by user"
-    exit 0
+if [[ "$*" != *"--force"* ]]; then
+    echo "WARNING: This will completely replace your current Gitea installation!"
+    echo "Backup file: $BACKUP_FILE"
+    echo "Current data will be backed up to: ${DATA_DIR}_pre_restore_$(date +%Y%m%d_%H%M%S)"
+    echo ""
+    read -p "Are you sure you want to continue? (yes/no): " confirm
+    if [ "$confirm" != "yes" ]; then
+        log "Restore cancelled by user"
+        exit 0
+    fi
 fi
 
 # Stop Gitea container if running
@@ -106,11 +108,17 @@ if docker ps | grep -q "${CONTAINER_NAME}"; then
     sleep 5
 fi
 
-# Create safety backup of current data
+# Create safety backup of current data and config
+TIMESTAMP_SAFE=$(date +%Y%m%d_%H%M%S)
 if [ -d "$DATA_DIR" ]; then
-    SAFETY_BACKUP="${DATA_DIR}_pre_restore_$(date +%Y%m%d_%H%M%S)"
-    log "Creating safety backup: $SAFETY_BACKUP"
-    mv "$DATA_DIR" "$SAFETY_BACKUP"
+    SAFETY_BACKUP_DATA="${DATA_DIR}_pre_restore_${TIMESTAMP_SAFE}"
+    log "Creating safety backup of data: $SAFETY_BACKUP_DATA"
+    mv "$DATA_DIR" "$SAFETY_BACKUP_DATA"
+fi
+if [ -d "$CONFIG_DIR" ]; then
+    SAFETY_BACKUP_CONFIG="${CONFIG_DIR}_pre_restore_${TIMESTAMP_SAFE}"
+    log "Creating safety backup of config: $SAFETY_BACKUP_CONFIG"
+    mv "$CONFIG_DIR" "$SAFETY_BACKUP_CONFIG"
 fi
 
 # Restore data
@@ -118,12 +126,14 @@ log "Restoring data from backup..."
 mkdir -p "$DATA_DIR"
 unzip -o "$BACKUP_PATH" -d "$DATA_DIR"
 
-# The dump contains config, but we want to use the one from Ansible.
-# We will copy the docker-compose.yml and app.ini from the safety backup if it exists.
-if [ -d "${SAFETY_BACKUP}/../config" ]; then
-    log "Restoring managed config files..."
-    cp "${SAFETY_BACKUP}/../config/docker-compose.yml" "$CONFIG_DIR/docker-compose.yml"
-    cp "${SAFETY_BACKUP}/../config/app.ini" "$CONFIG_DIR/app.ini"
+# Restore the Ansible-managed configuration from the safety backup
+log "Restoring managed config files from safety backup..."
+mkdir -p "$CONFIG_DIR"
+if [ -f "${SAFETY_BACKUP_CONFIG}/docker-compose.yml" ]; then
+    cp "${SAFETY_BACKUP_CONFIG}/docker-compose.yml" "$CONFIG_DIR/docker-compose.yml"
+fi
+if [ -f "${SAFETY_BACKUP_CONFIG}/app.ini" ]; then
+    cp "${SAFETY_BACKUP_CONFIG}/app.ini" "$CONFIG_DIR/app.ini"
 fi
 
 # Set correct ownership
