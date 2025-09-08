@@ -110,6 +110,7 @@ fi
 
 # Create safety backup of current data and config
 TIMESTAMP_SAFE=$(date +%Y%m%d_%H%M%S)
+SAFETY_BACKUP_CONFIG=""
 if [ -d "$DATA_DIR" ]; then
     SAFETY_BACKUP_DATA="${DATA_DIR}_pre_restore_${TIMESTAMP_SAFE}"
     log "Creating safety backup of data: $SAFETY_BACKUP_DATA"
@@ -126,14 +127,18 @@ log "Restoring data from backup..."
 mkdir -p "$DATA_DIR"
 unzip -o "$BACKUP_PATH" -d "$DATA_DIR"
 
-# Restore the Ansible-managed configuration from the safety backup
-log "Restoring managed config files from safety backup..."
+# Restore the Ansible-managed configuration from the safety backup if it exists
 mkdir -p "$CONFIG_DIR"
-if [ -f "${SAFETY_BACKUP_CONFIG}/docker-compose.yml" ]; then
-    cp "${SAFETY_BACKUP_CONFIG}/docker-compose.yml" "$CONFIG_DIR/docker-compose.yml"
-fi
-if [ -f "${SAFETY_BACKUP_CONFIG}/app.ini" ]; then
-    cp "${SAFETY_BACKUP_CONFIG}/app.ini" "$CONFIG_DIR/app.ini"
+if [ -n "$SAFETY_BACKUP_CONFIG" ]; then
+    log "Restoring managed config files from safety backup..."
+    if [ -f "${SAFETY_BACKUP_CONFIG}/docker-compose.yml" ]; then
+        cp "${SAFETY_BACKUP_CONFIG}/docker-compose.yml" "$CONFIG_DIR/docker-compose.yml"
+    fi
+    if [ -f "${SAFETY_BACKUP_CONFIG}/app.ini" ]; then
+        cp "${SAFETY_BACKUP_CONFIG}/app.ini" "$CONFIG_DIR/app.ini"
+    fi
+else
+    log "No safety backup of config found. The config will be generated on the next deployment."
 fi
 
 # Set correct ownership
