@@ -1,0 +1,8 @@
+---
+# Playbook to deploy Gitea Git service
+
+- name: Set up Gitea Git service
+  hosts: rpi5-01
+  become: true
+  roles:
+    - gitea

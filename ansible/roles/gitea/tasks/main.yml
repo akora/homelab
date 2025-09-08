@@ -1,0 +1,121 @@
+---
+# Gitea Role Tasks
+
+- name: Ensure Docker is installed
+  include_tasks: check_docker.yml
+
+- name: Create Gitea directories
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    mode: '0755'
+  with_items:
+    - "{{ gitea_data_directory }}"
+    - "{{ gitea_config_directory }}"
+
+- name: Deploy Gitea app.ini configuration
+  ansible.builtin.template:
+    src: app.ini.j2
+    dest: "{{ gitea_config_directory }}/app.ini"
+    owner: "1000"
+    group: "1000"
+    mode: '0600'
+
+- name: Set ownership and permissions for Gitea directories
+  ansible.builtin.file:
+    path: "{{ item }}"
+    owner: "1000"
+    group: "1000"
+    mode: '0755'
+    recurse: yes
+  loop:
+    - "{{ gitea_data_directory }}"
+    - "{{ gitea_config_directory }}"
+
+- name: Check if Docker network exists
+  ansible.builtin.shell: docker network ls | grep {{ gitea_network_name }}
+  register: network_check
+  changed_when: false
+  failed_when: false
+
+- name: Create Docker network if it doesn't exist
+  ansible.builtin.shell: docker network create {{ gitea_network_name }}
+  when: network_check.rc != 0
+
+
+- name: Create Docker Compose file
+  ansible.builtin.template:
+    src: docker-compose.yml.j2
+    dest: "{{ gitea_config_directory }}/docker-compose.yml"
+    mode: '0644'
+
+# We don't stop or remove the existing container to preserve data
+# Instead, we let Docker Compose handle container updates safely
+- name: Check if Gitea container exists
+  ansible.builtin.shell: docker ps -a | grep {{ gitea_container_name }}
+  register: gitea_container_check
+  changed_when: false
+  failed_when: false
+
+- name: Verify Gitea health before upgrade (if container exists)
+  ansible.builtin.uri:
+    url: "{{ gitea_root_url }}/api/v1/version"
+    method: GET
+    status_code: 200
+    validate_certs: no
+  register: gitea_health_check
+  when: gitea_container_check.rc == 0
+  failed_when: false
+  ignore_errors: yes
+  tags: 
+    - upgrade
+    - health_check
+
+- name: Create backup of Gitea data before deployment
+  ansible.builtin.shell: |
+    if [ -d "{{ gitea_data_directory }}" ] && [ "$(ls -A {{ gitea_data_directory }})" ]; then
+      backup_dir="{{ gitea_data_directory }}_backup_$(date +%Y%m%d_%H%M%S)"
+      cp -r "{{ gitea_data_directory }}" "$backup_dir"
+      echo "Backup created at: $backup_dir"
+      # Keep only the 5 most recent backups
+      ls -dt {{ gitea_data_directory }}_backup_* 2>/dev/null | tail -n +6 | xargs rm -rf
+    fi
+  register: gitea_backup_result
+  when: gitea_container_check.rc == 0
+  tags:
+    - backup
+    - upgrade
+
+- name: Display backup information
+  ansible.builtin.debug:
+    msg: "{{ gitea_backup_result.stdout }}"
+  when: gitea_backup_result is defined and gitea_backup_result.stdout is defined and gitea_backup_result.stdout != ""
+
+- name: Deploy Gitea container
+  community.docker.docker_compose_v2:
+    project_src: "{{ gitea_config_directory }}"
+    state: present
+    recreate: never  # Don't recreate containers that already exist
+  register: gitea_deploy_result
+  # Skip deployment if health check failed and this is an upgrade
+  when: |
+    (gitea_container_check.rc != 0) or 
+    (gitea_health_check is not defined) or 
+    (gitea_health_check.status is defined and gitea_health_check.status == 200) or 
+    ('upgrade' not in ansible_run_tags)
+
+- name: Show Gitea deployment result
+  ansible.builtin.debug:
+    var: gitea_deploy_result
+  when: gitea_deploy_result.changed
+
+- name: Ensure Gitea is running
+  ansible.builtin.shell: docker ps | grep {{ gitea_container_name }}
+  register: gitea_status
+  changed_when: false
+  failed_when: false
+
+- name: Display Gitea URL
+  ansible.builtin.debug:
+    msg: "Gitea is available at {{ gitea_root_url }}"
+  when: gitea_status.rc == 0

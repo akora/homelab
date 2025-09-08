@@ -1,0 +1,14 @@
+http:
+  routers:
+    gitea-router:
+      rule: "Host(`{{ vault_service_domains.gitea }}`)"
+      entryPoints:
+        - websecure
+      service: gitea-service
+      tls: {}
+
+  services:
+    gitea-service:
+      loadBalancer:
+        servers:
+          - url: "http://{{ vault_host_ips.rpi5_01 }}:3000"

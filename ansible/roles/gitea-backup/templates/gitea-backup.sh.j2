@@ -1,0 +1,66 @@
+#!/bin/bash
+# Gitea Complete Backup Script
+# Backs up entire Gitea installation using the 'gitea dump' command
+
+set -euo pipefail
+
+# Configuration
+BACKUP_BASE_DIR="{{ gitea_backup_base_dir }}"
+BACKUP_DIR="${BACKUP_BASE_DIR}/daily"
+CONTAINER_NAME="{{ gitea_container_name }}"
+TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+BACKUP_NAME="gitea-dump-${TIMESTAMP}"
+BACKUP_PATH="${BACKUP_DIR}/${BACKUP_NAME}.zip" # Gitea dump creates a zip file
+LOG_FILE="${BACKUP_BASE_DIR}/backup.log"
+# Use a temporary directory inside the volume that Gitea can access
+TEMP_DIR_IN_CONTAINER="/data/tmp/backup"
+
+# Logging function
+log() {
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1" | tee -a "$LOG_FILE"
+}
+
+log "Starting Gitea backup: ${BACKUP_NAME}"
+
+# Check if Gitea is running
+if ! docker ps | grep -q "${CONTAINER_NAME}"; then
+    log "ERROR: Gitea container is not running. Cannot perform backup."
+    exit 1
+fi
+
+# Cleanup function to remove temporary files from container
+cleanup() {
+    log "Cleaning up temporary files in container..."
+    docker exec "${CONTAINER_NAME}" rm -rf "${TEMP_DIR_IN_CONTAINER}"
+}
+trap cleanup EXIT
+
+# Create a temporary directory for the dump inside the container
+log "Creating temporary backup directory inside container..."
+docker exec "${CONTAINER_NAME}" mkdir -p "${TEMP_DIR_IN_CONTAINER}"
+
+# Run gitea dump
+log "Running gitea dump..."
+docker exec --user git "${CONTAINER_NAME}" /usr/local/bin/gitea dump --file "${TEMP_DIR_IN_CONTAINER}/${BACKUP_NAME}.zip" --tempdir "${TEMP_DIR_IN_CONTAINER}/tmp"
+log "Gitea dump completed inside container."
+
+# Copy backup from container to host
+log "Copying backup from container to host..."
+docker cp "${CONTAINER_NAME}:${TEMP_DIR_IN_CONTAINER}/${BACKUP_NAME}.zip" "${BACKUP_DIR}/"
+
+# Verify backup on host
+if [ -f "$BACKUP_PATH" ]; then
+    BACKUP_SIZE=$(du -h "$BACKUP_PATH" | cut -f1)
+    log "Backup completed successfully: ${BACKUP_PATH} (${BACKUP_SIZE})"
+else
+    log "ERROR: Backup file not created on host"
+    exit 1
+fi
+
+# Cleanup old backups (keep last {{ gitea_backup_retention_count }})
+log "Cleaning up old backups..."
+cd "${BACKUP_DIR}"
+ls -t gitea-dump-*.zip 2>/dev/null | tail -n +$(({{ gitea_backup_retention_count }} + 1)) | xargs -r rm -f
+log "Backup cleanup completed"
+
+log "Gitea backup process finished successfully"

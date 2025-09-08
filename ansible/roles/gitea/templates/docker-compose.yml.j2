@@ -1,0 +1,46 @@
+---
+# Gitea Docker Compose Configuration
+# This file is managed by Ansible - local changes will be overwritten
+
+services:
+  gitea:
+    image: {{ gitea_image }}
+    container_name: {{ gitea_container_name }}
+    restart: unless-stopped
+    user: root
+    environment:
+      - USER_UID=1000
+      - USER_GID=1000
+      - TZ=UTC
+    volumes:
+      - {{ gitea_data_directory }}:/data:Z
+      - {{ gitea_config_directory }}/app.ini:/data/gitea/conf/app.ini:Z
+      - /etc/timezone:/etc/timezone:ro
+      - /etc/localtime:/etc/localtime:ro
+    ports:
+      - "{{ gitea_ssh_port }}:22"
+      - "{{ gitea_http_port }}:3000"
+    networks:
+      - {{ gitea_network_name }}
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.gitea.rule=Host(`{{ gitea_domain }}`)"
+      - "traefik.http.routers.gitea.entrypoints=websecure"
+      - "traefik.http.routers.gitea.tls=true"
+      - "traefik.http.routers.gitea.tls.certresolver={{ gitea_traefik_certresolver }}"
+      - "traefik.http.services.gitea.loadbalancer.server.port={{ gitea_http_port }}"
+{% if gitea_homepage_integration %}
+      # Homepage Auto-Discovery Labels
+      - "homepage.group={{ inventory_hostname }}"
+      - "homepage.name={{ gitea_homepage_name }}"
+      - "homepage.icon={{ gitea_homepage_icon }}"
+      - "homepage.href={{ gitea_root_url }}"
+      - "homepage.description={{ gitea_homepage_description }}"
+{% endif %}
+      # Watchtower Update Control - DISABLED for data safety
+      - "com.centurylinklabs.watchtower.enable=false"
+      - "com.centurylinklabs.watchtower.stop-timeout=30s"
+
+networks:
+  {{ gitea_network_name }}:
+    external: true

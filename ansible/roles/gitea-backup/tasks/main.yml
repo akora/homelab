@@ -1,0 +1,62 @@
+---
+# Gitea Backup Role Tasks
+
+- name: Create backup directories
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    mode: '0755'
+  loop:
+    - "{{ gitea_backup_base_dir }}"
+    - "{{ gitea_backup_base_dir }}/daily"
+    - "{{ gitea_backup_base_dir }}/scripts"
+
+- name: Deploy backup script
+  ansible.builtin.template:
+    src: gitea-backup.sh.j2
+    dest: "{{ gitea_backup_base_dir }}/scripts/gitea-backup.sh"
+    mode: '0755'
+
+- name: Deploy restore script
+  ansible.builtin.template:
+    src: gitea-restore.sh.j2
+    dest: "{{ gitea_backup_base_dir }}/scripts/gitea-restore.sh"
+    mode: '0755'
+
+- name: Deploy backup verification script
+  ansible.builtin.template:
+    src: gitea-verify-backup.sh.j2
+    dest: "{{ gitea_backup_base_dir }}/scripts/gitea-verify-backup.sh"
+    mode: '0755'
+
+- name: Set up backup cron job
+  ansible.builtin.cron:
+    name: "Gitea Daily Backup"
+    minute: "{{ gitea_backup_schedule.minute }}"
+    hour: "{{ gitea_backup_schedule.hour }}"
+    day: "{{ gitea_backup_schedule.day }}"
+    month: "{{ gitea_backup_schedule.month }}"
+    weekday: "{{ gitea_backup_schedule.weekday }}"
+    job: "{{ gitea_backup_base_dir }}/scripts/gitea-backup.sh"
+    user: root
+
+- name: Set up backup cleanup cron job
+  ansible.builtin.cron:
+    name: "Gitea Backup Cleanup"
+    minute: "30"
+    hour: "3"
+    day: "*"
+    month: "*"
+    weekday: "*"
+    job: "find {{ gitea_backup_base_dir }}/daily -name '*.tar.gz' -mtime +{{ gitea_backup_retention_days }} -delete"
+    user: root
+
+- name: Create initial backup
+  ansible.builtin.shell: "{{ gitea_backup_base_dir }}/scripts/gitea-backup.sh"
+  register: initial_backup_result
+  when: gitea_backup_test_restore | default(false)
+
+- name: Display initial backup result
+  ansible.builtin.debug:
+    msg: "{{ initial_backup_result.stdout_lines }}"
+  when: initial_backup_result is defined and initial_backup_result.stdout_lines is defined

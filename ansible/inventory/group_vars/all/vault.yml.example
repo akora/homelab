@@ -39,4 +39,11 @@ vault_host_ips:
 # Service domains
 vault_service_domains:
   traefik: "traefik.your-domain.com"
+  gitea: "git.your-domain.com"
   portainer: "portainer.your-domain.com"
+
+# =============================================================================
+# GITEA CREDENTIALS
+# =============================================================================
+vault_gitea_admin_password: "your-secure-gitea-admin-password"
+vault_gitea_admin_email: "your-gitea-admin-email@example.com"

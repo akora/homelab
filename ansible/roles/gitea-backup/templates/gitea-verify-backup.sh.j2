@@ -1,0 +1,149 @@
+#!/bin/bash
+# Gitea Backup Verification Script
+# Verifies backup integrity and content of a 'gitea dump' zip file
+
+set -euo pipefail
+
+# Configuration
+BACKUP_BASE_DIR="{{ gitea_backup_base_dir }}"
+BACKUP_DIR="${BACKUP_BASE_DIR}/daily"
+LOG_FILE="${BACKUP_BASE_DIR}/verify.log"
+
+# Logging function
+log() {
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1" | tee -a "$LOG_FILE"
+}
+
+# Usage function
+usage() {
+    echo "Usage: $0 <backup_file.zip>"
+    echo "       $0 --list                    # List available backups"
+    echo "       $0 --latest                  # Verify latest backup"
+    echo "       $0 --all                     # Verify all backups"
+    exit 1
+}
+
+# List available backups
+list_backups() {
+    echo "Available Gitea backups:"
+    echo "========================"
+    cd "${BACKUP_DIR}" 2>/dev/null || { echo "No backup directory found"; exit 1; }
+    ls -lht gitea-dump-*.zip 2>/dev/null | while read -r line; do
+        file=$(echo "$line" | awk '{print $9}')
+        size=$(echo "$line" | awk '{print $5}')
+        date=$(echo "$line" | awk '{print $6, $7, $8}')
+        echo "$file ($size, $date)"
+    done || echo "No backups found"
+    exit 0
+}
+
+# Verify single backup
+verify_backup() {
+    local backup_file="$1"
+    local backup_path="${BACKUP_DIR}/${backup_file}"
+    
+    if [ ! -f "$backup_path" ]; then
+        log "ERROR: Backup file not found: $backup_path"
+        return 1
+    fi
+    
+    log "Verifying backup: $backup_file"
+    
+    # Check file size
+    local file_size=$(stat -f%z "$backup_path" 2>/dev/null || stat -c%s "$backup_path" 2>/dev/null || echo "0")
+    if [ "$file_size" -lt 100000 ]; then  # Less than 100KB is suspicious
+        log "WARNING: Backup file seems too small: ${file_size} bytes"
+    fi
+    
+    # Test archive integrity
+    if ! unzip -t "$backup_path" >/dev/null 2>&1; then
+        log "ERROR: Archive integrity check failed for $backup_file"
+        return 1
+    fi
+    log "✓ ZIP archive integrity is OK"
+
+    # Verify essential components by listing files in the zip
+    local errors=0
+    local zip_contents
+    zip_contents=$(unzip -l "$backup_path")
+
+    if ! echo "$zip_contents" | grep -q 'app.ini'; then
+        log "ERROR: Missing app.ini in backup"
+        ((errors++))
+    else
+        log "✓ app.ini found"
+    fi
+
+    if ! echo "$zip_contents" | grep -q 'gitea.db'; then
+        log "WARNING: gitea.db (SQLite database) not found. This is normal if you use an external database."
+    else
+        log "✓ gitea.db found"
+    fi
+
+    if ! echo "$zip_contents" | grep -q 'gitea-repo.zip'; then
+        log "ERROR: Missing gitea-repo.zip in backup"
+        ((errors++))
+    else
+        log "✓ gitea-repo.zip found"
+    fi
+
+    if [ $errors -eq 0 ]; then
+        log "✓ Backup verification passed: $backup_file"
+        return 0
+    else
+        log "✗ Backup verification failed: $backup_file ($errors errors)"
+        return 1
+    fi
+}
+
+# Get latest backup
+get_latest_backup() {
+    cd "${BACKUP_DIR}" 2>/dev/null || { echo "No backup directory found"; exit 1; }
+    ls -t gitea-dump-*.zip 2>/dev/null | head -1 || { echo "No backups found"; exit 1; }
+}
+
+# Main logic
+if [ $# -eq 0 ]; then
+    usage
+fi
+
+case "$1" in
+    --list|-l)
+        list_backups
+        ;;
+    --latest)
+        BACKUP_FILE=$(get_latest_backup)
+        verify_backup "$BACKUP_FILE"
+        ;;
+    --all)
+        log "Verifying all Gitea backups..."
+        cd "${BACKUP_DIR}" 2>/dev/null || { log "No backup directory found"; exit 1; }
+        
+        total=0
+        passed=0
+        failed=0
+        
+        for backup in gitea-dump-*.zip; do
+            if [ -f "$backup" ]; then
+                ((total++))
+                if verify_backup "$backup"; then
+                    ((passed++))
+                else
+                    ((failed++))
+                fi
+                echo "---"
+            fi
+        done
+        
+        log "Verification summary: $total total, $passed passed, $failed failed"
+        if [ $failed -gt 0 ]; then
+            exit 1
+        fi
+        ;;
+    --help|-h)
+        usage
+        ;;
+    *)
+        verify_backup "$1"
+        ;;
+esac

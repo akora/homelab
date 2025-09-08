@@ -1,0 +1,82 @@
+---
+# Comprehensive Gitea Deployment with Backup/Restore System
+# This playbook deploys Gitea with a complete backup and restore solution
+
+- name: Deploy Gitea with Backup System
+  hosts: rpi5-01
+  become: true
+  
+  vars:
+    # Override default admin credentials (use vault in production)
+    gitea_admin_username: "admin"
+    gitea_admin_password: "{{ vault_gitea_admin_password }}"
+    gitea_admin_email: "{{ vault_gitea_admin_email }}"
+    
+    # Backup configuration
+    gitea_backup_retention_days: 30
+    gitea_backup_retention_count: 10
+    
+    # Enable backup verification
+    gitea_backup_verify: true
+
+  pre_tasks:
+    - name: Ensure required directories exist
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: directory
+        mode: '0755'
+      loop:
+        - /opt/docker
+        - /opt/backups
+
+  roles:
+    - role: gitea
+      tags: ['gitea', 'deploy']
+    
+    - role: gitea-backup
+      tags: ['backup', 'deploy']
+
+  post_tasks:
+    - name: Display deployment summary
+      ansible.builtin.debug:
+        msg: |
+          =====================================
+          Gitea Deployment Complete
+          =====================================
+          
+          🌐 Gitea URL: {{ gitea_root_url }}
+          👤 Admin User: {{ gitea_admin_username }}
+          🔑 Admin Password: {{ gitea_admin_password }}
+          📧 Admin Email: {{ gitea_admin_email }}
+          
+          📁 Data Directory: {{ gitea_data_directory }}
+          ⚙️  Config Directory: {{ gitea_config_directory }}
+          💾 Backup Directory: {{ gitea_backup_base_dir }}
+          
+          🔧 Management Scripts:
+          - Backup: {{ gitea_backup_base_dir }}/scripts/gitea-backup.sh
+          - Restore: {{ gitea_backup_base_dir }}/scripts/gitea-restore.sh --latest
+          - Verify: {{ gitea_backup_base_dir }}/scripts/gitea-verify-backup.sh --latest
+          
+          ⏰ Scheduled Backup: Daily at {{ gitea_backup_schedule.hour }}:{{ gitea_backup_schedule.minute }}
+          🗂️  Backup Retention: {{ gitea_backup_retention_count }} backups, {{ gitea_backup_retention_days }} days
+          
+          Next Steps:
+          1. Access Gitea at {{ gitea_root_url }}
+          2. Complete initial setup if needed
+          3. Test backup: sudo {{ gitea_backup_base_dir }}/scripts/gitea-backup.sh
+          4. Verify backup: sudo {{ gitea_backup_base_dir }}/scripts/gitea-verify-backup.sh --latest
+      tags: ['summary']
+
+    - name: Create management aliases
+      ansible.builtin.blockinfile:
+        path: /root/.bashrc
+        marker: "# {mark} Gitea Management Aliases"
+        block: |
+          # Gitea Management Aliases
+          alias gitea-backup='{{ gitea_backup_base_dir }}/scripts/gitea-backup.sh'
+          alias gitea-restore='{{ gitea_backup_base_dir }}/scripts/gitea-restore.sh'
+          alias gitea-verify='{{ gitea_backup_base_dir }}/scripts/gitea-verify-backup.sh'
+          alias gitea-logs='docker logs {{ gitea_container_name }} -f'
+          alias gitea-status='docker ps | grep {{ gitea_container_name }}'
+      tags: ['aliases']

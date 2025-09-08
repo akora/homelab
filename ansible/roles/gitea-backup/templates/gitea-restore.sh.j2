@@ -1,0 +1,154 @@
+#!/bin/bash
+# Gitea Complete Restore Script
+# Restores entire Gitea installation from a 'gitea dump' backup
+
+set -euo pipefail
+
+# Configuration
+BACKUP_BASE_DIR="{{ gitea_backup_base_dir }}"
+BACKUP_DIR="${BACKUP_BASE_DIR}/daily"
+DATA_DIR="{{ gitea_data_directory }}"
+CONFIG_DIR="{{ gitea_config_directory }}"
+CONTAINER_NAME="{{ gitea_container_name }}"
+LOG_FILE="${BACKUP_BASE_DIR}/restore.log"
+
+# Logging function
+log() {
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1" | tee -a "$LOG_FILE"
+}
+
+# Usage function
+usage() {
+    echo "Usage: $0 <backup_file.zip>"
+    echo "       $0 --list                    # List available backups"
+    echo "       $0 --latest                  # Restore from latest backup"
+    echo ""
+    echo "Examples:"
+    echo "  $0 gitea-dump-20240121_020000.zip"
+    echo "  $0 --latest"
+    exit 1
+}
+
+# List available backups
+list_backups() {
+    echo "Available Gitea backups:"
+    echo "========================"
+    cd "${BACKUP_DIR}" 2>/dev/null || { echo "No backup directory found"; exit 1; }
+    ls -lht gitea-dump-*.zip 2>/dev/null | while read -r line; do
+        file=$(echo "$line" | awk '{print $9}')
+        size=$(echo "$line" | awk '{print $5}')
+        date=$(echo "$line" | awk '{print $6, $7, $8}')
+        echo "$file ($size, $date)"
+    done || echo "No backups found"
+    exit 0
+}
+
+# Get latest backup
+get_latest_backup() {
+    cd "${BACKUP_DIR}" 2>/dev/null || { echo "No backup directory found"; exit 1; }
+    ls -t gitea-dump-*.zip 2>/dev/null | head -1 || { echo "No backups found"; exit 1; }
+}
+
+# Parse arguments
+if [ $# -eq 0 ]; then
+    usage
+fi
+
+case "$1" in
+    --list|-l)
+        list_backups
+        ;;
+    --latest)
+        BACKUP_FILE=$(get_latest_backup)
+        ;;
+    --help|-h)
+        usage
+        ;;
+    *)
+        BACKUP_FILE="$1"
+        ;;
+esac
+
+# Validate backup file
+BACKUP_PATH="${BACKUP_DIR}/${BACKUP_FILE}"
+if [ ! -f "$BACKUP_PATH" ]; then
+    log "ERROR: Backup file not found: $BACKUP_PATH"
+    echo "Available backups:"
+    list_backups
+    exit 1
+fi
+
+log "Starting Gitea restore from: ${BACKUP_FILE}"
+
+# Verify backup integrity
+log "Verifying backup integrity..."
+if ! unzip -t "$BACKUP_PATH" >/dev/null 2>&1; then
+    log "ERROR: Backup archive is corrupted"
+    exit 1
+fi
+log "Backup integrity verified"
+
+# Safety check - confirm restore
+echo "WARNING: This will completely replace your current Gitea installation!"
+echo "Backup file: $BACKUP_FILE"
+echo "Current data will be backed up to: ${DATA_DIR}_pre_restore_$(date +%Y%m%d_%H%M%S)"
+echo ""
+read -p "Are you sure you want to continue? (yes/no): " confirm
+if [ "$confirm" != "yes" ]; then
+    log "Restore cancelled by user"
+    exit 0
+fi
+
+# Stop Gitea container if running
+if docker ps | grep -q "${CONTAINER_NAME}"; then
+    log "Stopping Gitea container..."
+    docker stop "${CONTAINER_NAME}" || true
+    sleep 5
+fi
+
+# Create safety backup of current data
+if [ -d "$DATA_DIR" ]; then
+    SAFETY_BACKUP="${DATA_DIR}_pre_restore_$(date +%Y%m%d_%H%M%S)"
+    log "Creating safety backup: $SAFETY_BACKUP"
+    mv "$DATA_DIR" "$SAFETY_BACKUP"
+fi
+
+# Restore data
+log "Restoring data from backup..."
+mkdir -p "$DATA_DIR"
+unzip -o "$BACKUP_PATH" -d "$DATA_DIR"
+
+# The dump contains config, but we want to use the one from Ansible.
+# We will copy the docker-compose.yml and app.ini from the safety backup if it exists.
+if [ -d "${SAFETY_BACKUP}/../config" ]; then
+    log "Restoring managed config files..."
+    cp "${SAFETY_BACKUP}/../config/docker-compose.yml" "$CONFIG_DIR/docker-compose.yml"
+    cp "${SAFETY_BACKUP}/../config/app.ini" "$CONFIG_DIR/app.ini"
+fi
+
+# Set correct ownership
+log "Setting ownership..."
+chown -R 1000:1000 "$DATA_DIR"
+chown -R 1000:1000 "$CONFIG_DIR"
+
+# Start Gitea container
+log "Starting Gitea container..."
+cd "$CONFIG_DIR"
+if [ -f "docker-compose.yml" ]; then
+    docker compose up -d
+    sleep 10
+    
+    # Check if container is running
+    if docker ps | grep -q "${CONTAINER_NAME}"; then
+        log "Gitea container started successfully"
+        log "Gitea should be available at: {{ gitea_protocol }}://{{ gitea_domain }}/"
+    else
+        log "WARNING: Gitea container may not have started properly"
+        log "Check logs with: docker logs ${CONTAINER_NAME}"
+    fi
+else
+    log "WARNING: No docker-compose.yml found, please start Gitea manually"
+fi
+
+log "Gitea restore completed successfully"
+log "Please verify that all data has been restored correctly"

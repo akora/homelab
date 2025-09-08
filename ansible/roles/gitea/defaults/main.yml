@@ -1,0 +1,50 @@
+---
+# Gitea Role Default Variables
+
+# Deployment settings
+gitea_image: "gitea/gitea:1.22.6"  # Updated to latest stable
+gitea_container_name: "gitea"
+gitea_network_name: "traefik-net"  # This should match your Traefik network name
+gitea_data_directory: "/opt/docker/gitea/data"
+gitea_config_directory: "/opt/docker/gitea/config"
+gitea_backup_retention: 5  # Number of backups to keep
+
+# Port settings
+gitea_http_port: "3000"
+gitea_ssh_port: "2222"  # SSH port for Git operations
+
+# Domain settings
+gitea_domain: "{{ vault_service_domains.gitea }}"
+gitea_protocol: "https"
+gitea_root_url: "{{ gitea_protocol }}://{{ gitea_domain }}/"
+
+# Database settings
+gitea_db_type: "sqlite3"
+gitea_db_path: "/data/gitea.db"  # Absolute path in mounted volume
+
+# User settings
+gitea_admin_username: "gitea_admin"  # Initial admin username
+gitea_admin_password: "{{ vault_gitea_admin_password }}"
+gitea_admin_email: "{{ vault_gitea_admin_email }}"
+
+# App settings
+gitea_app_name: "Gitea: Git with a cup of tea"
+gitea_run_mode: "prod"  # prod or dev
+
+# Registration settings
+gitea_disable_registration: "false"  # Set to "true" to disable registration
+gitea_require_signin: "false"  # Set to "true" to require signin to view pages
+
+# Installation settings
+gitea_install_lock: "true"  # Set to "true" after initial setup to prevent reinstallation
+
+# Traefik integration
+gitea_traefik_integration: true
+gitea_traefik_certresolver: "cloudflare"  # Should match your Traefik certresolver
+
+# Homepage integration
+gitea_homepage_integration: true
+gitea_homepage_group: "{{ inventory_hostname }}"
+gitea_homepage_name: "Gitea"
+gitea_homepage_icon: "si-gitea"
+gitea_homepage_description: "Git Service"

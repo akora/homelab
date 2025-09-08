@@ -1,0 +1,28 @@
+---
+# Gitea Backup Role Default Variables
+
+# Backup settings
+gitea_backup_base_dir: "/opt/backups/gitea"
+gitea_backup_retention_days: 30
+gitea_backup_retention_count: 10
+
+# Gitea paths (should match main gitea role)
+gitea_data_directory: "/opt/docker/gitea/data"
+gitea_config_directory: "/opt/docker/gitea/config"
+gitea_container_name: "gitea"
+
+# Backup schedule (cron format)
+gitea_backup_schedule:
+  minute: "0"
+  hour: "2"
+  day: "*"
+  month: "*"
+  weekday: "*"
+
+# Backup verification
+gitea_backup_verify: true
+gitea_backup_test_restore: false  # Set to true to test restore process
+
+# Notification settings (optional)
+gitea_backup_notify_on_failure: false
+gitea_backup_notify_email: ""
