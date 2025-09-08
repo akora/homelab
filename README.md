@@ -277,10 +277,10 @@ For security, user registration is disabled by default. To create your first use
 
 ### Managing the Admin Account
 
-An `admin` user is configured by the playbook, but the password must be set manually. If you need to manage the `admin` account, you can reset its password at any time using the management script:
+The playbook configures the user `akora` as the administrator. If you need to reset the password for this user, you can use the management script:
 
 ```bash
 ./scripts/manage-gitea.sh reset-password
 ```
 
-This command will prompt you to enter a new password for the `admin` user.
+This command will generate a new random password for the `akora` user and display it in the console.
