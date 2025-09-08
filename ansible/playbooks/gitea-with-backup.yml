@@ -19,6 +19,9 @@
     # Enable backup verification
     gitea_backup_verify: true
 
+    # Disable user registration
+    gitea_disable_registration: "true"
+
   pre_tasks:
     - name: Ensure required directories exist
       ansible.builtin.file:
@@ -43,24 +46,24 @@
           =====================================
           Gitea Deployment Complete
           =====================================
-          
-          🌐 Gitea URL: {{ gitea_root_url }}
-          👤 Admin User: {{ gitea_admin_username }}
-          🔑 Admin Password: {{ gitea_admin_password }}
-          📧 Admin Email: {{ gitea_admin_email }}
-          
-          📁 Data Directory: {{ gitea_data_directory }}
-          ⚙️  Config Directory: {{ gitea_config_directory }}
-          💾 Backup Directory: {{ gitea_backup_base_dir }}
-          
-          🔧 Management Scripts:
+
+          Gitea URL: {{ gitea_root_url }}
+          Admin User: {{ gitea_admin_username }}
+          Admin Password: {{ gitea_admin_password }}
+          Admin Email: {{ gitea_admin_email }}
+
+          Data Directory: {{ gitea_data_directory }}
+          Config Directory: {{ gitea_config_directory }}
+          Backup Directory: {{ gitea_backup_base_dir }}
+
+          Management Scripts:
           - Backup: {{ gitea_backup_base_dir }}/scripts/gitea-backup.sh
           - Restore: {{ gitea_backup_base_dir }}/scripts/gitea-restore.sh --latest
           - Verify: {{ gitea_backup_base_dir }}/scripts/gitea-verify-backup.sh --latest
-          
-          ⏰ Scheduled Backup: Daily at {{ gitea_backup_schedule.hour }}:{{ gitea_backup_schedule.minute }}
-          🗂️  Backup Retention: {{ gitea_backup_retention_count }} backups, {{ gitea_backup_retention_days }} days
-          
+
+          Scheduled Backup: Daily at {{ gitea_backup_schedule.hour }}:{{ gitea_backup_schedule.minute }}
+          Backup Retention: {{ gitea_backup_retention_count }} backups, {{ gitea_backup_retention_days }} days
+
           Next Steps:
           1. Access Gitea at {{ gitea_root_url }}
           2. Complete initial setup if needed

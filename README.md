@@ -220,3 +220,67 @@ If all goes well, you should be able to access the Homepage dashboard at <https:
 Finally! We've got something to look at! :)
 
 At this stage you should be able to see all the services running on all servers, nicely represented.
+
+## Tier FIVE: Gitea Git Service
+
+This tier deploys Gitea, a self-hosted Git service, complete with a robust backup and restore system.
+
+### Deployment
+
+To deploy Gitea, use the provided management script:
+
+```bash
+./scripts/manage-gitea.sh deploy
+```
+
+The script will run the Ansible playbook, and upon completion, it will display the Gitea URL and initial admin credentials.
+
+### Initial User Setup
+
+For security, user registration is disabled by default. To create your first user account, follow these steps:
+
+1. **Enable Registration**: Open the `ansible/playbooks/gitea-with-backup.yml` file and comment out the `gitea_disable_registration` variable:
+
+   ```yaml
+   # In ansible/playbooks/gitea-with-backup.yml
+   ...
+   vars:
+     ...
+     # Disable user registration
+     # gitea_disable_registration: "true"
+   ```
+
+2. **Deploy Gitea**: Run the deployment command again to apply the change:
+
+   ```bash
+   ./scripts/manage-gitea.sh deploy
+   ```
+
+3. **Register Your Account**: Navigate to your Gitea URL (e.g., `https://git.l4n.io`) and register your user account through the web interface.
+
+4. **Disable Registration**: Once you have created your account, uncomment the `gitea_disable_registration` line in `ansible/playbooks/gitea-with-backup.yml` to secure your instance:
+
+   ```yaml
+   # In ansible/playbooks/gitea-with-backup.yml
+   ...
+   vars:
+     ...
+     # Disable user registration
+     gitea_disable_registration: "true"
+   ```
+
+5. **Re-deploy**: Run the deployment one last time to disable registration:
+
+   ```bash
+   ./scripts/manage-gitea.sh deploy
+   ```
+
+### Managing the Admin Account
+
+An `admin` user is configured by the playbook, but the password must be set manually. If you need to manage the `admin` account, you can reset its password at any time using the management script:
+
+```bash
+./scripts/manage-gitea.sh reset-password
+```
+
+This command will prompt you to enter a new password for the `admin` user.
