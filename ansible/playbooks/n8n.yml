@@ -1,0 +1,8 @@
+---
+# Playbook to deploy n8n workflow automation service
+
+- name: Set up n8n workflow automation
+  hosts: rpi4-02
+  become: true
+  roles:
+    - n8n

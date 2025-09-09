@@ -1,0 +1,66 @@
+---
+# n8n Role Tasks
+
+- name: Ensure Docker is installed
+  include_tasks: check_docker.yml
+
+- name: Create n8n directories
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    mode: '0777'  # More permissive for n8n container
+    owner: 1000   # This is typically the node user in n8n container
+    group: 1000
+  with_items:
+    - "{{ n8n_data_directory }}"
+    - "{{ n8n_config_directory }}"
+
+- name: Check if Docker network exists
+  ansible.builtin.shell: docker network ls | grep {{ n8n_network_name }}
+  register: network_check
+  changed_when: false
+  failed_when: false
+
+- name: Create Docker network if it doesn't exist
+  ansible.builtin.shell: docker network create {{ n8n_network_name }}
+  when: network_check.rc != 0
+
+- name: Create Docker Compose file
+  ansible.builtin.template:
+    src: docker-compose.yml.j2
+    dest: "{{ n8n_config_directory }}/docker-compose.yml"
+    mode: '0644'
+
+- name: Create environment file
+  ansible.builtin.template:
+    src: env.j2
+    dest: "{{ n8n_config_directory }}/.env"
+    mode: '0644'
+
+- name: Stop and remove existing n8n container if exists
+  community.docker.docker_container:
+    name: "{{ n8n_container_name }}"
+    state: absent
+    force_kill: yes
+
+- name: Deploy n8n container
+  community.docker.docker_compose_v2:
+    project_src: "{{ n8n_config_directory }}"
+    state: present
+  register: n8n_deploy_result
+
+- name: Show n8n deployment result
+  ansible.builtin.debug:
+    var: n8n_deploy_result
+  when: n8n_deploy_result.changed
+
+- name: Ensure n8n is running
+  ansible.builtin.shell: docker ps | grep {{ n8n_container_name }}
+  register: n8n_status
+  changed_when: false
+  failed_when: false
+
+- name: Display n8n URL
+  ansible.builtin.debug:
+    msg: "n8n is available at {{ n8n_root_url }}"
+  when: n8n_status.rc == 0

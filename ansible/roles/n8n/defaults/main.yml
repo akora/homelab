@@ -1,0 +1,36 @@
+---
+# n8n Role Default Variables
+
+# Deployment settings
+n8n_image: "n8nio/n8n:latest"
+n8n_container_name: "n8n"
+n8n_network_name: "traefik-net"  # This should match your Traefik network name
+n8n_data_directory: "/opt/docker/n8n/data"
+n8n_config_directory: "/opt/docker/n8n/config"
+
+# Port settings
+n8n_http_port: "5678"
+
+# Domain settings
+n8n_domain: "{{ vault_service_domains.n8n }}"
+n8n_protocol: "https"
+n8n_root_url: "{{ n8n_protocol }}://{{ n8n_domain }}/"
+
+# Security settings
+n8n_basic_auth_user: "{{ vault_n8n_basic_auth_user }}"
+n8n_basic_auth_password: "{{ vault_n8n_basic_auth_password }}"
+n8n_encryption_key: "{{ vault_n8n_encryption_key }}"
+
+# Timezone settings
+n8n_timezone: "Europe/Budapest"
+
+# Traefik integration
+n8n_traefik_integration: true
+n8n_traefik_certresolver: "cloudflare"  # Should match your Traefik certresolver
+
+# Homepage integration
+n8n_homepage_integration: true
+n8n_homepage_group: "{{ inventory_hostname }}"
+n8n_homepage_name: "n8n"
+n8n_homepage_icon: "si-n8n"
+n8n_homepage_description: "Workflow Automation"

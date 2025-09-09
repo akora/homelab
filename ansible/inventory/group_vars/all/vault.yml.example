@@ -41,6 +41,9 @@ vault_service_domains:
   traefik: "traefik.your-domain.com"
   gitea: "git.your-domain.com"
   portainer: "portainer.your-domain.com"
+  homepage: "home.your-domain.com"
+  syncthing: "sync.your-domain.com"
+  n8n: "n8n.your-domain.com"
 
 # =============================================================================
 # GITEA CREDENTIALS
@@ -70,3 +73,12 @@ vault_twingate_connectors:
     enabled: true
     access_token: "your-twingate-access-token-2"
     refresh_token: "your-twingate-refresh-token-2"
+
+# =============================================================================
+# N8N CREDENTIALS
+# =============================================================================
+# HTTP Basic Auth credentials for n8n web interface
+vault_n8n_basic_auth_user: "admin"
+vault_n8n_basic_auth_password: "your-secure-n8n-password"
+# Encryption key for n8n credential storage (must be exactly 32 characters)
+vault_n8n_encryption_key: "your-32-character-encryption-key"

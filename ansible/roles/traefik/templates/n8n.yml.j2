@@ -1,0 +1,14 @@
+http:
+  routers:
+    n8n-router:
+      rule: "Host(`{{ vault_service_domains.n8n }}`)"
+      entryPoints:
+        - websecure
+      service: n8n-service
+      tls: {}
+
+  services:
+    n8n-service:
+      loadBalancer:
+        servers:
+          - url: "http://{{ vault_host_ips.rpi4_02 }}:5678"

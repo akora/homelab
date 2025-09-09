@@ -443,3 +443,112 @@ Connectors are automatically discovered by Homepage and include:
 
 - Verify network connectivity and DNS resolution
 - Ensure access tokens are valid and not expired
+
+## n8n - Workflow Automation
+
+n8n is a powerful workflow automation tool that allows you to connect different services and automate tasks. This setup deploys n8n with secure authentication and SSL integration.
+
+### Deployment of n8n
+
+1. **Configure n8n Credentials**:
+
+   Update `ansible/inventory/group_vars/all/vault.yml` with your n8n configuration:
+
+   ```yaml
+   # n8n credentials
+   vault_n8n_basic_auth_user: "admin"
+   vault_n8n_basic_auth_password: "your-secure-password"
+   vault_n8n_encryption_key: "your-32-character-encryption-key"
+   ```
+
+2. **Deploy n8n**:
+
+   ```bash
+   ansible-playbook ansible/playbooks/n8n.yml
+   ```
+
+### n8n Configuration
+
+Key configuration options (set in `ansible/roles/n8n/defaults/main.yml`):
+
+```yaml
+# Docker image (always latest version)
+n8n_image: "n8nio/n8n:latest"
+
+# Network and storage
+n8n_network_name: "traefik-net"
+n8n_data_directory: "/opt/docker/n8n/data"
+n8n_config_directory: "/opt/docker/n8n/config"
+
+# Security settings
+n8n_basic_auth_user: "{{ vault_n8n_basic_auth_user }}"
+n8n_basic_auth_password: "{{ vault_n8n_basic_auth_password }}"
+n8n_encryption_key: "{{ vault_n8n_encryption_key }}"
+
+# Homepage integration
+n8n_homepage_integration: true
+```
+
+### n8n Security Features
+
+- **HTTP Basic Authentication**: Initial access control layer
+- **Credential Encryption**: All workflow credentials encrypted with AES-256
+- **SSL/TLS**: Automatic HTTPS via Traefik and Cloudflare certificates
+- **Network Isolation**: Runs in isolated Docker network
+- **Container Security**: Runs as non-root user (UID 1000)
+
+### Authentication Requirements
+
+**Basic Auth Credentials**:
+
+- Provides HTTP-level authentication before reaching n8n interface
+- Required because n8n runs in single-user mode without built-in user management
+
+**Encryption Key**:
+
+- Must be exactly 32 characters long
+- Used for AES-256 encryption of stored credentials and sensitive data
+- Critical for protecting API keys and passwords stored in workflows
+
+### Cross-Server Routing
+
+n8n runs on `rpi4-02` while Traefik runs on `zima-01`. Static routing configuration:
+
+```yaml
+# /opt/docker/traefik/config/dynamic/n8n.yml
+http:
+  routers:
+    n8n-router:
+      rule: "Host(`n8n.l4n.io`)"
+      service: n8n-service
+  services:
+    n8n-service:
+      loadBalancer:
+        servers:
+          - url: "http://192.168.0.42:5678"
+```
+
+### n8n Troubleshooting
+
+- Access the web interface at `https://n8n.l4n.io`
+- Check container status:
+
+  ```bash
+  ansible rpi4-02 -m shell -a "docker ps | grep n8n"
+  ```
+
+- View container logs:
+
+  ```bash
+  ansible rpi4-02 -m shell -a "docker logs n8n --tail 20"
+  ```
+
+- Verify Traefik routing:
+
+  ```bash
+  curl -I https://n8n.l4n.io
+  ```
+
+### Automatic Updates
+
+n8n is configured to use the `latest` tag and includes Watchtower integration for automatic updates. The container will automatically pull and deploy new versions as they become available.

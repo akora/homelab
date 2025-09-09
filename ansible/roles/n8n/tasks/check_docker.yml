@@ -1,0 +1,13 @@
+---
+# Check if Docker is installed and install it if not
+
+- name: Check if Docker is installed
+  ansible.builtin.command: which docker
+  register: docker_check
+  changed_when: false
+  failed_when: false
+
+- name: Install Docker if not installed
+  ansible.builtin.include_role:
+    name: ../docker
+  when: docker_check.rc != 0

@@ -1,0 +1,41 @@
+---
+# n8n Docker Compose Configuration
+# This file is managed by Ansible - local changes will be overwritten
+
+services:
+  n8n:
+    image: {{ n8n_image }}
+    container_name: {{ n8n_container_name }}
+    restart: unless-stopped
+    user: "1000:1000"  # Run as node user (UID 1000)
+    env_file:
+      - .env
+    environment:
+      - TZ=UTC
+    volumes:
+      - {{ n8n_data_directory }}:/home/node/.n8n
+    ports:
+      - "{{ n8n_http_port }}:5678"  # Map container port 5678 to host port
+    networks:
+      - {{ n8n_network_name }}
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.n8n.rule=Host(`{{ n8n_domain }}`)"
+      - "traefik.http.routers.n8n.entrypoints=websecure"
+      - "traefik.http.routers.n8n.tls=true"
+      - "traefik.http.routers.n8n.tls.certresolver={{ n8n_traefik_certresolver }}"
+      - "traefik.http.services.n8n.loadbalancer.server.port={{ n8n_http_port }}"
+{% if n8n_homepage_integration %}
+      # Homepage Auto-Discovery Labels
+      - "homepage.group={{ inventory_hostname }}"
+      - "homepage.name={{ n8n_homepage_name }}"
+      - "homepage.icon={{ n8n_homepage_icon }}"
+      - "homepage.href={{ n8n_root_url }}"
+      - "homepage.description={{ n8n_homepage_description }}"
+{% endif %}
+      # Watchtower Update Control
+      - "com.centurylinklabs.watchtower.enable=true"
+
+networks:
+  {{ n8n_network_name }}:
+    external: true
