@@ -43,7 +43,6 @@
       traefik.http.routers.portainer.rule: "Host(`{{ portainer_domain }}`)"
       traefik.http.routers.portainer.entrypoints: "websecure"
       traefik.http.routers.portainer.tls: "true"
-      traefik.http.routers.portainer.tls.certresolver: "cloudflare"
       traefik.http.routers.portainer.middlewares: "security-headers@file"
       traefik.http.services.portainer.loadbalancer.server.port: "{{ portainer_port }}"
       # Homepage-specific labels

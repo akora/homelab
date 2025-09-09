@@ -53,10 +53,3 @@ certificatesResolvers:
           - "1.1.1.1:53"
           - "1.0.0.1:53"
 
-tls:
-  certificates:
-    - certResolver: cloudflare
-      domains:
-        - main: "{{ vault_domain }}"
-          sans:
-            - "*.{{ vault_domain }}"

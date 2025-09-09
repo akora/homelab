@@ -61,7 +61,6 @@
       traefik.http.routers.homepage.rule: "Host(`{{ homepage_domain }}`)"
       traefik.http.routers.homepage.entrypoints: "websecure"
       traefik.http.routers.homepage.tls: "true"
-      traefik.http.routers.homepage.tls.certresolver: "cloudflare"
       traefik.http.services.homepage.loadbalancer.server.port: "{{ homepage_port }}"
       traefik.http.routers.homepage.middlewares: "security-headers@file"
       # Homepage-specific labels for service discovery

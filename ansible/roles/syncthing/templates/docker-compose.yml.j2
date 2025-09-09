@@ -28,7 +28,6 @@ services:
       - "traefik.http.routers.syncthing.rule=Host(`{{ syncthing_domain }}`)"
       - "traefik.http.routers.syncthing.entrypoints=websecure"
       - "traefik.http.routers.syncthing.tls=true"
-      - "traefik.http.routers.syncthing.tls.certresolver={{ syncthing_traefik_certresolver }}"
       - "traefik.http.services.syncthing.loadbalancer.server.port={{ syncthing_gui_port }}"
 {% if syncthing_homepage_integration %}
       # Homepage Auto-Discovery Labels

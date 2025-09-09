@@ -9,8 +9,7 @@ http:
       service: "router"
       entryPoints:
         - "websecure"
-      tls:
-        certResolver: "{{ traefik_default_cert_resolver }}"
+      tls: {}
       middlewares:
         - "lan-ip-whitelist@file"
     
@@ -19,8 +18,7 @@ http:
       service: "nas"
       entryPoints:
         - "websecure"
-      tls:
-        certResolver: "{{ traefik_default_cert_resolver }}"
+      tls: {}
       middlewares:
         - "lan-ip-whitelist@file"
   

@@ -2,4 +2,23 @@
 # Wildcard certificate configuration for Traefik
 # This file is managed by Ansible - local changes will be overwritten
 
-# Note: TLS options moved to certificates.yml.j2 to avoid duplication
+http:
+  routers:
+    wildcard-cert-generator:
+      rule: "Host(`{{ vault_domain }}`)"
+      service: noop
+      entryPoints:
+        - websecure
+      tls:
+        certResolver: cloudflare
+        domains:
+          - main: "{{ vault_domain }}"
+            sans:
+              - "*.{{ vault_domain }}"
+      priority: 1
+
+  services:
+    noop:
+      loadBalancer:
+        servers:
+          - url: "http://127.0.0.1:1"

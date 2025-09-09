@@ -27,7 +27,6 @@ services:
       - "traefik.http.routers.gitea.rule=Host(`{{ gitea_domain }}`)"
       - "traefik.http.routers.gitea.entrypoints=websecure"
       - "traefik.http.routers.gitea.tls=true"
-      - "traefik.http.routers.gitea.tls.certresolver={{ gitea_traefik_certresolver }}"
       - "traefik.http.services.gitea.loadbalancer.server.port={{ gitea_http_port }}"
 {% if gitea_homepage_integration %}
       # Homepage Auto-Discovery Labels

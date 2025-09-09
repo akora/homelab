@@ -5,8 +5,7 @@ http:
       entryPoints:
         - websecure
       service: syncthing-service
-      tls:
-        certResolver: "{{ traefik_default_cert_resolver }}"
+      tls: {}
 
   services:
     syncthing-service:
