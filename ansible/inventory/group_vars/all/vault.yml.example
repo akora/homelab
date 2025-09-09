@@ -48,3 +48,25 @@ vault_service_domains:
 vault_gitea_admin_username: "gitea-admin"
 vault_gitea_admin_password: "your-secure-gitea-admin-password"
 vault_gitea_admin_email: "your-gitea-admin-email@example.com"
+
+# =============================================================================
+# TWINGATE CREDENTIALS
+# =============================================================================
+# Your Twingate network URL
+vault_twingate_connector_url: "https://your-network.twingate.com"
+# Network key (leave empty if not required)
+vault_twingate_network_key: ""
+# Twingate connector instances configuration
+vault_twingate_connectors:
+  - name: "twingate-rpi4-01"
+    host: "rpi4-01"
+    log_level: 5
+    enabled: true
+    access_token: "your-twingate-access-token-1"
+    refresh_token: "your-twingate-refresh-token-1"
+  - name: "twingate-rpi4-02"
+    host: "rpi4-02"
+    log_level: 5
+    enabled: true
+    access_token: "your-twingate-access-token-2"
+    refresh_token: "your-twingate-refresh-token-2"
