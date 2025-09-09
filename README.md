@@ -351,3 +351,95 @@ syncthing_config_directory: "/opt/docker/syncthing/config"
 ### Backup
 
 Your Syncthing data is stored in the configured data directory (`/opt/docker/syncthing/data` by default). Ensure this directory is included in your regular backup routine.
+
+## Twingate - Secure Remote Access
+
+Twingate provides zero-trust network access to your homelab resources. This setup deploys Twingate connectors on multiple hosts for redundancy and load distribution.
+
+### Deployment of Twingate Connectors
+
+1. **Configure Twingate Credentials**:
+
+   Update `ansible/inventory/group_vars/all/vault.yml` with your Twingate configuration:
+
+   ```yaml
+   # Twingate connector configuration
+   vault_twingate_connector_url: "https://your-network.twingate.com"
+   vault_twingate_connectors:
+     - name: "twingate-rpi4-01"
+       host: "rpi4-01"
+       log_level: 5
+       enabled: true
+       access_token: "your-access-token-1"
+       refresh_token: "your-refresh-token-1"
+     - name: "twingate-rpi4-02"
+       host: "rpi4-02"
+       log_level: 5
+       enabled: true
+       access_token: "your-access-token-2"
+       refresh_token: "your-refresh-token-2"
+   ```
+
+2. **Deploy Twingate Connectors**:
+
+   ```bash
+   ansible-playbook ansible/playbooks/twingate.yml
+   ```
+
+### Twingate Configuration
+
+Key configuration options (set in `ansible/roles/twingate-connector/defaults/main.yml`):
+
+```yaml
+# Docker image and network
+twingate_connector_docker_image: "twingate/connector:latest"
+twingate_connector_network_name: "traefik-net"
+
+# Storage directories
+twingate_connector_data_directory: "/opt/docker/twingate-connector/data"
+twingate_connector_config_directory: "/opt/docker/twingate-connector/config"
+
+# Logging
+twingate_connector_log_level: 5  # 3=error, 4=warning, 5=notice, 6=info, 7=debug
+
+# Homepage integration
+twingate_homepage_integration: true
+```
+
+### Twingate Security Features
+
+- **Zero-Trust Architecture**: All connections are authenticated and encrypted
+- **No Open Ports**: Connectors establish outbound connections only
+- **IPv6 Disabled**: Prevents STUN warnings and potential security issues
+- **Container Security**: Runs with `no-new-privileges` security option
+- **Network Isolation**: Integrated with Traefik network for secure communication
+
+### High Availability
+
+The deployment creates multiple connector instances across different hosts:
+
+- **Primary Connector**: `twingate-rpi4-01` on rpi4-01
+- **Secondary Connector**: `twingate-rpi4-02` on rpi4-02
+
+This provides redundancy and load distribution for your remote access needs.
+
+### Monitoring
+
+Connectors are automatically discovered by Homepage and include:
+
+- **Service Status**: Real-time connection status
+- **Container Health**: Docker container monitoring via Watchtower
+- **Log Monitoring**: Configurable log levels for troubleshooting
+
+### Twingate Troubleshooting
+
+- Check connector status in the Twingate Admin Console
+- View container logs:
+
+  ```bash
+  docker logs twingate-rpi4-01
+  docker logs twingate-rpi4-02
+  ```
+
+- Verify network connectivity and DNS resolution
+- Ensure access tokens are valid and not expired
