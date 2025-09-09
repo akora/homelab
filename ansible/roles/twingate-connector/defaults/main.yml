@@ -1,0 +1,28 @@
+---
+# Twingate Connector Role Default Variables
+
+# Deployment settings
+twingate_connector_docker_image: "twingate/connector:latest"
+twingate_connector_network_name: "traefik-net"
+twingate_connector_data_directory: "/opt/docker/twingate-connector/data"
+twingate_connector_config_directory: "/opt/docker/twingate-connector/config"
+
+# Twingate connector settings
+# These will be overridden by vault.yml with actual values from Twingate portal
+twingate_connector_url: "{{ vault_twingate_connector_url }}"
+twingate_connector_network_key: "{{ vault_twingate_network_key }}"
+
+# Connector instances configuration
+# You can deploy one or more connector instances on different nodes
+# Actual tokens are stored in vault.yml for security
+twingate_connector_instances: "{{ vault_twingate_connectors }}"
+
+# Logging
+twingate_connector_log_level: 5  # Numeric log level: 3=error, 4=warning, 5=notice, 6=info, 7=debug
+
+# Homepage integration
+twingate_homepage_integration: true
+twingate_homepage_name: "Twingate"
+# twingate_homepage_icon: "https://cdn.jsdelivr.net/gh/selfhst/icons/svg/twingate.svg"
+twingate_homepage_icon: "si-linuxcontainers"
+twingate_homepage_description: "Secure Remote Access"

@@ -1,0 +1,37 @@
+---
+# Twingate Connector Role Tasks
+
+- name: Ensure Docker is installed
+  ansible.builtin.include_tasks: check_docker.yml
+
+- name: Create Twingate Connector directories
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    mode: "0755"
+  loop:
+    - "{{ twingate_connector_data_directory }}"
+    - "{{ twingate_connector_config_directory }}"
+    - "{{ twingate_connector_data_directory }}/{{ twingate_connector_instances[0].name }}"
+    - "{{ twingate_connector_data_directory }}/{{ twingate_connector_instances[1].name }}"
+  when: inventory_hostname in twingate_connector_instances | map(attribute='host') | list
+
+- name: Ensure Traefik network exists
+  community.docker.docker_network:
+    name: "{{ twingate_connector_network_name }}"
+    driver: bridge
+    state: present
+  register: network_result
+  failed_when: >
+    network_result is failed and
+    'already exists' not in network_result.msg
+  when: inventory_hostname in twingate_connector_instances | map(attribute='host') | list
+
+- name: Deploy Twingate Connector instances
+  include_tasks: deploy_connector.yml
+  loop: "{{ range(0, twingate_connector_instances | length) | list }}"
+  loop_control:
+    loop_var: connector_index
+  when: 
+    - inventory_hostname == twingate_connector_instances[connector_index].host
+    - twingate_connector_instances[connector_index].enabled | default(true)

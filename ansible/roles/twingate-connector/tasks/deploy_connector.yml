@@ -1,0 +1,27 @@
+---
+# Twingate Connector Deployment Tasks
+
+- name: Create Twingate Connector configuration directory for {{ twingate_connector_instances[connector_index].name }}
+  ansible.builtin.file:
+    path: "{{ twingate_connector_config_directory }}/{{ twingate_connector_instances[connector_index].name }}"
+    state: directory
+    mode: "0755"
+
+- name: Create Twingate Connector docker-compose.yml for {{ twingate_connector_instances[connector_index].name }}
+  ansible.builtin.template:
+    src: "docker-compose.yml.j2"
+    dest: "{{ twingate_connector_config_directory }}/{{ twingate_connector_instances[connector_index].name }}/docker-compose.yml"
+    mode: "0644"
+
+- name: Deploy Twingate Connector container for {{ twingate_connector_instances[connector_index].name }}
+  community.docker.docker_compose_v2:
+    project_src: "{{ twingate_connector_config_directory }}/{{ twingate_connector_instances[connector_index].name }}"
+    state: present
+    pull: always  # Always pull the latest image
+    recreate: always  # Force recreation to apply the new image version
+  register: twingate_connector_deploy_result
+
+- name: Show Twingate Connector deployment result for {{ twingate_connector_instances[connector_index].name }}
+  ansible.builtin.debug:
+    var: twingate_connector_deploy_result
+    verbosity: 1

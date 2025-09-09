@@ -1,0 +1,13 @@
+---
+# Deploy Twingate Connectors for secure remote access
+# This playbook sets up Twingate connectors on specified nodes
+
+- name: Deploy Twingate Connectors to specified nodes
+  hosts: homelab
+  become: true
+  gather_facts: true
+  
+  tasks:
+    - name: Include Twingate Connector role
+      ansible.builtin.include_role:
+        name: twingate-connector

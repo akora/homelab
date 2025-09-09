@@ -1,0 +1,41 @@
+---
+# Twingate Connector Docker Compose Configuration
+# This file is managed by Ansible - local changes will be overwritten
+
+services:
+  twingate-connector:
+    image: {{ twingate_connector_docker_image }}
+    container_name: {{ twingate_connector_instances[connector_index].name }}
+    hostname: {{ twingate_connector_instances[connector_index].name }}
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    networks:
+      - {{ twingate_connector_network_name }}
+    sysctls:
+      - net.ipv6.conf.all.disable_ipv6=1
+      - net.ipv6.conf.default.disable_ipv6=1
+    environment:
+      TZ: "UTC"
+      TWINGATE_URL: "{{ twingate_connector_url }}"
+      TWINGATE_NETWORK_KEY: "{{ twingate_connector_network_key }}"
+      TWINGATE_ACCESS_TOKEN: "{{ twingate_connector_instances[connector_index].access_token }}"
+      TWINGATE_REFRESH_TOKEN: "{{ twingate_connector_instances[connector_index].refresh_token }}"
+      TWINGATE_LOG_LEVEL: "{{ twingate_connector_instances[connector_index].log_level | default(twingate_connector_log_level) }}"
+      TWINGATE_IPV6: "false"  # Disable IPv6 to prevent STUN warnings
+    volumes:
+      - {{ twingate_connector_data_directory }}/{{ twingate_connector_instances[connector_index].name }}:/data
+    labels:
+      # Homepage Auto-Discovery Labels
+{% if twingate_homepage_integration %}
+      - "homepage.group={{ inventory_hostname }}"
+      - "homepage.name={{ twingate_homepage_name }}"
+      - "homepage.icon={{ twingate_homepage_icon }}"
+      - "homepage.description={{ twingate_homepage_description }}"
+{% endif %}
+      # Watchtower labels for automatic updates
+      - "com.centurylinklabs.watchtower.enable=true"
+
+networks:
+  {{ twingate_connector_network_name }}:
+    external: true
