@@ -284,3 +284,70 @@ The playbook configures the user `akora` as the administrator. If you need to re
 ```
 
 This command will generate a new random password for the `akora` user and display it in the console.
+
+## Syncthing - Continuous File Synchronization
+
+Syncthing is a continuous file synchronization program that synchronizes files between two or more computers in real time. This setup deploys Syncthing with Traefik integration for secure remote access.
+
+### Deployment of Syncthing
+
+1. **Deploy Syncthing**:
+
+   ```bash
+   ansible-playbook ansible/playbooks/syncthing.yml
+   ```
+
+2. **Access the Web UI**:
+   - Open `https://sync.l4n.io` in your browser
+   - The default configuration disables remote discovery and relay servers for security
+   - The web interface is secured with your wildcard SSL certificate
+
+### Configuration
+
+Key configuration options (set in `ansible/roles/syncthing/defaults/main.yml`):
+
+```yaml
+# Port configuration
+syncthing_gui_port: "8384"        # Web GUI port
+syncthing_listen_port: "22000"    # File transfer port
+syncthing_discovery_port: "21027" # Local discovery (UDP)
+
+# Security
+syncthing_restrict_to_lan: true   # Restrict access to local network
+syncthing_allowed_networks:
+  - "192.168.0.0/24"             # Adjust to your LAN subnet
+
+# Storage
+syncthing_data_directory: "/opt/docker/syncthing/data"
+syncthing_config_directory: "/opt/docker/syncthing/config"
+```
+
+### Security Features
+
+- **TLS Encryption**: All traffic is encrypted using the wildcard SSL certificate
+- **Local Network Only**: By default, access is restricted to your local network
+- **No Remote Discovery**: Remote discovery and relay servers are disabled
+- **File-based Authentication**: Uses the Syncthing web interface for user management
+
+### Adding New Devices
+
+1. Open the Syncthing web interface
+2. Click "Add Remote Device"
+3. Enter the Device ID of the remote device
+4. Select which folders to share
+5. Accept the connection request on the remote device
+
+### Troubleshooting
+
+- If you can't access the web interface, check if Traefik is running and the DNS is correctly pointing to your server
+- For sync issues, check the Syncthing logs:
+
+  ```bash
+  docker logs syncthing
+  ```
+
+- Ensure the required ports (8384, 22000, 21027/udp) are open in your firewall
+
+### Backup
+
+Your Syncthing data is stored in the configured data directory (`/opt/docker/syncthing/data` by default). Ensure this directory is included in your regular backup routine.
