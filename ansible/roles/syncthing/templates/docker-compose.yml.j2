@@ -1,0 +1,46 @@
+---
+# Syncthing Docker Compose Configuration
+# This file is managed by Ansible - local changes will be overwritten
+
+services:
+  syncthing:
+    image: {{ syncthing_image }}
+    container_name: {{ syncthing_container_name }}
+    restart: unless-stopped
+    environment:
+      - PUID={{ syncthing_user_id }}
+      - PGID={{ syncthing_group_id }}
+      - TZ=UTC
+      # Disable global discovery but keep local discovery
+      - STNOANNOUNCE=1
+      - STNORELAYS=1
+      - STNODEFAULTFOLDERS=1
+    volumes:
+      - {{ syncthing_data_directory }}:/var/syncthing
+    ports:
+      - "{{ syncthing_gui_port }}:8384"
+      - "{{ syncthing_listen_port }}:22000"
+      - "{{ syncthing_discovery_port }}:21027/udp"
+    networks:
+      - {{ syncthing_network_name }}
+    labels:
+      - "traefik.enable=false"
+      - "traefik.http.routers.syncthing.rule=Host(`{{ syncthing_domain }}`)"
+      - "traefik.http.routers.syncthing.entrypoints=websecure"
+      - "traefik.http.routers.syncthing.tls=true"
+      - "traefik.http.routers.syncthing.tls.certresolver={{ syncthing_traefik_certresolver }}"
+      - "traefik.http.services.syncthing.loadbalancer.server.port={{ syncthing_gui_port }}"
+{% if syncthing_homepage_integration %}
+      # Homepage Auto-Discovery Labels
+      - "homepage.group={{ inventory_hostname }}"
+      - "homepage.name={{ syncthing_homepage_name }}"
+      - "homepage.icon={{ syncthing_homepage_icon }}"
+      - "homepage.href={{ syncthing_root_url }}"
+      - "homepage.description={{ syncthing_homepage_description }}"
+{% endif %}
+      # Watchtower Update Control
+      - "com.centurylinklabs.watchtower.enable=true"
+
+networks:
+  {{ syncthing_network_name }}:
+    external: true

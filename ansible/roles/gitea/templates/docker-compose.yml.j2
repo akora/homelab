@@ -23,7 +23,7 @@ services:
     networks:
       - {{ gitea_network_name }}
     labels:
-      - "traefik.enable=true"
+      - "traefik.enable=false"
       - "traefik.http.routers.gitea.rule=Host(`{{ gitea_domain }}`)"
       - "traefik.http.routers.gitea.entrypoints=websecure"
       - "traefik.http.routers.gitea.tls=true"

@@ -44,7 +44,6 @@
   ansible.builtin.shell: docker network create {{ gitea_network_name }}
   when: network_check.rc != 0
 
-
 - name: Create Docker Compose file
   ansible.builtin.template:
     src: docker-compose.yml.j2

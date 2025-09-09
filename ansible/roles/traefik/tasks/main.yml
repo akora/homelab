@@ -46,6 +46,7 @@
     - { src: "dynamic/wildcard.yml.j2", dest: "{{ traefik_config_directory }}/dynamic/wildcard.yml" }
     - { src: "dynamic/lan-services.yml.j2", dest: "{{ traefik_config_directory }}/dynamic/lan-services.yml" }
     - { src: "gitea.yml.j2", dest: "{{ traefik_config_directory }}/dynamic/gitea.yml" }
+    - { src: "syncthing.yml.j2", dest: "{{ traefik_config_directory }}/dynamic/syncthing.yml" }
 
 - name: Deploy Traefik container
   community.docker.docker_compose_v2:

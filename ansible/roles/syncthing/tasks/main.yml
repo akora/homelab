@@ -1,0 +1,58 @@
+---
+# Syncthing Role Tasks
+
+- name: Ensure Docker is installed
+  include_tasks: check_docker.yml
+
+- name: Create Syncthing directories
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    mode: '0755'
+  with_items:
+    - "{{ syncthing_data_directory }}"
+    - "{{ syncthing_config_directory }}"
+
+- name: Check if Docker network exists
+  ansible.builtin.shell: docker network ls | grep {{ syncthing_network_name }}
+  register: network_check
+  changed_when: false
+  failed_when: false
+
+- name: Create Docker network if it doesn't exist
+  ansible.builtin.shell: docker network create {{ syncthing_network_name }}
+  when: network_check.rc != 0
+
+- name: Create Docker Compose file
+  ansible.builtin.template:
+    src: docker-compose.yml.j2
+    dest: "{{ syncthing_config_directory }}/docker-compose.yml"
+    mode: '0644'
+
+- name: Stop and remove existing Syncthing container if exists
+  community.docker.docker_container:
+    name: "{{ syncthing_container_name }}"
+    state: absent
+    force_kill: yes
+
+- name: Deploy Syncthing container
+  community.docker.docker_compose_v2:
+    project_src: "{{ syncthing_config_directory }}"
+    state: present
+  register: syncthing_deploy_result
+
+- name: Show Syncthing deployment result
+  ansible.builtin.debug:
+    var: syncthing_deploy_result
+  when: syncthing_deploy_result.changed
+
+- name: Ensure Syncthing is running
+  ansible.builtin.shell: docker ps | grep {{ syncthing_container_name }}
+  register: syncthing_status
+  changed_when: false
+  failed_when: false
+
+- name: Display Syncthing URL
+  ansible.builtin.debug:
+    msg: "Syncthing is available at {{ syncthing_root_url }}"
+  when: syncthing_status.rc == 0

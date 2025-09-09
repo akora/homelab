@@ -1,0 +1,15 @@
+http:
+  routers:
+    syncthing-router:
+      rule: "Host(`{{ vault_service_domains.syncthing }}`)"
+      entryPoints:
+        - websecure
+      service: syncthing-service
+      tls:
+        certResolver: "{{ traefik_default_cert_resolver }}"
+
+  services:
+    syncthing-service:
+      loadBalancer:
+        servers:
+          - url: "http://{{ vault_host_ips.rpi4_01 }}:8384"

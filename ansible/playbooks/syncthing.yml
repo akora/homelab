@@ -1,0 +1,8 @@
+---
+# Playbook to deploy Syncthing file synchronization service
+
+- name: Set up Syncthing file synchronization service
+  hosts: rpi4-01
+  become: true
+  roles:
+    - syncthing

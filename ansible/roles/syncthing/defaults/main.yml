@@ -1,0 +1,39 @@
+---
+# Syncthing Role Default Variables
+
+# Deployment settings
+syncthing_image: "syncthing/syncthing:1.27.3"
+syncthing_container_name: "syncthing"
+syncthing_network_name: "traefik-net"  # This should match your Traefik network name
+syncthing_data_directory: "/opt/docker/syncthing/data"
+syncthing_config_directory: "/opt/docker/syncthing/config"
+
+# Port settings
+syncthing_gui_port: "8384"  # Web GUI port
+syncthing_listen_port: "22000"  # File transfer port
+syncthing_discovery_port: "21027"  # Local discovery port (UDP)
+
+# Domain settings
+syncthing_domain: "{{ vault_service_domains.syncthing }}"
+syncthing_protocol: "https"
+syncthing_root_url: "{{ syncthing_protocol }}://{{ syncthing_domain }}/"
+
+# User settings
+syncthing_user_id: "1000"
+syncthing_group_id: "1000"
+
+# Traefik integration
+syncthing_traefik_integration: true
+syncthing_traefik_certresolver: "cloudflare"  # Should match your Traefik certresolver
+
+# Security settings
+syncthing_restrict_to_lan: true
+syncthing_allowed_networks:
+  - "{{ vault_lan_subnet }}"  # Local LAN subnet
+
+# Homepage integration
+syncthing_homepage_integration: true
+syncthing_homepage_group: "{{ inventory_hostname }}"
+syncthing_homepage_name: "Syncthing"
+syncthing_homepage_icon: "si-syncthing"
+syncthing_homepage_description: "Continuous File Synchronization"
