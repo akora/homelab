@@ -48,6 +48,7 @@
     - { src: "gitea.yml.j2", dest: "{{ traefik_config_directory }}/dynamic/gitea.yml" }
     - { src: "syncthing.yml.j2", dest: "{{ traefik_config_directory }}/dynamic/syncthing.yml" }
     - { src: "n8n.yml.j2", dest: "{{ traefik_config_directory }}/dynamic/n8n.yml" }
+    - { src: "web-server.yml.j2", dest: "{{ traefik_config_directory }}/dynamic/web-server.yml" }
 
 - name: Deploy Traefik container
   community.docker.docker_compose_v2:

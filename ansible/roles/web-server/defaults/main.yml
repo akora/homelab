@@ -1,0 +1,29 @@
+---
+# Web Server Role Default Variables
+
+# Deployment settings
+web_server_docker_image: "nginx:alpine"
+web_server_container_name: "web-server"
+web_server_network_name: "traefik-net"
+web_server_data_directory: "/opt/docker/web-server"
+web_server_webroot_directory: "/opt/docker/web-server/webroot"
+
+# Port settings
+web_server_http_port: "8090"
+
+# Domain settings
+web_server_domain: "{{ vault_service_domains.web }}"
+
+# Traefik integration settings
+traefik_default_cert_resolver: "cloudflare"
+
+# Homepage integration
+web_server_homepage_integration: true
+web_server_homepage_group: "{{ inventory_hostname }}"
+web_server_homepage_name: "Web Server"
+web_server_homepage_icon: "si-nginx"
+web_server_homepage_description: "Simple File Web Server"
+
+# File permissions
+web_server_owner: "akora"
+web_server_group: "akora"

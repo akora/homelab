@@ -1,0 +1,10 @@
+---
+# Web Server Ansible Playbook for Homelab
+# This playbook sets up a simple web server with file sharing capabilities
+
+- name: Set up web server on rpi5-01
+  hosts: rpi5-01
+  become: true
+
+  roles:
+    - role: web-server

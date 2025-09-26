@@ -1,0 +1,14 @@
+http:
+  routers:
+    web-server-router:
+      rule: "Host(`{{ vault_service_domains.web }}`)"
+      entryPoints:
+        - websecure
+      service: web-server-service
+      tls: {}
+
+  services:
+    web-server-service:
+      loadBalancer:
+        servers:
+          - url: "http://{{ vault_host_ips.rpi5_01 }}:8090"

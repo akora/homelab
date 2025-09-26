@@ -1,0 +1,24 @@
+services:
+  web-server:
+    image: {{ web_server_docker_image }}
+    container_name: {{ web_server_container_name }}
+    restart: unless-stopped
+    ports:
+      - "{{ web_server_http_port }}:{{ web_server_http_port }}"
+    volumes:
+      - {{ web_server_webroot_directory }}:/usr/share/nginx/html:ro
+      - {{ web_server_data_directory }}/nginx.conf:/etc/nginx/nginx.conf:ro
+    networks:
+      - {{ web_server_network_name }}
+{% if web_server_homepage_integration %}
+    labels:
+      - "homepage.group={{ web_server_homepage_group }}"
+      - "homepage.name={{ web_server_homepage_name }}"
+      - "homepage.icon={{ web_server_homepage_icon }}"
+      - "homepage.href=https://{{ web_server_domain }}"
+      - "homepage.description={{ web_server_homepage_description }}"
+{% endif %}
+
+networks:
+  {{ web_server_network_name }}:
+    external: true

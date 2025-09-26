@@ -1,0 +1,167 @@
+---
+# Web Server role tasks
+
+- name: Create web server data directory
+  become: true
+  file:
+    path: "{{ web_server_data_directory }}"
+    state: directory
+    owner: "{{ web_server_owner }}"
+    group: "{{ web_server_group }}"
+    mode: '0755'
+  tags: ['web-server', 'directories']
+
+- name: Create web server webroot directory
+  become: true
+  file:
+    path: "{{ web_server_webroot_directory }}"
+    state: directory
+    owner: "{{ web_server_owner }}"
+    group: "{{ web_server_group }}"
+    mode: '0755'
+  tags: ['web-server', 'directories']
+
+- name: Set ACL permissions for webroot directory
+  become: true
+  command: "setfacl -R -m u:{{ web_server_owner }}:rwx {{ web_server_webroot_directory }}"
+  when: ansible_os_family == "Debian"
+  tags: ['web-server', 'permissions']
+
+- name: Set proper permissions for uploaded files (make readable by nginx)
+  become: true
+  file:
+    path: "{{ web_server_webroot_directory }}"
+    state: directory
+    owner: "{{ web_server_owner }}"
+    group: "www-data"
+    mode: '0755'
+    recurse: yes
+  tags: ['web-server', 'permissions']
+
+- name: Set default permissions for future uploads
+  become: true
+  command: "find {{ web_server_webroot_directory }} -type f -exec chmod 644 {} +"
+  tags: ['web-server', 'permissions']
+
+- name: Set default directory permissions for future uploads
+  become: true
+  command: "find {{ web_server_webroot_directory }} -type d -exec chmod 755 {} +"
+  tags: ['web-server', 'permissions']
+
+- name: Remove old index.html file to enable directory listing
+  become: true
+  file:
+    path: "{{ web_server_webroot_directory }}/index.html"
+    state: absent
+  tags: ['web-server', 'cleanup']
+
+- name: Create fix-permissions script for easy maintenance
+  become: true
+  copy:
+    content: |
+      #!/bin/bash
+      # Script to fix file permissions for web server uploads
+      echo "Fixing permissions for {{ web_server_webroot_directory }}..."
+      
+      # Set directory permissions
+      find {{ web_server_webroot_directory }} -type d -exec chmod 755 {} +
+      
+      # Set file permissions
+      find {{ web_server_webroot_directory }} -type f -exec chmod 644 {} +
+      
+      # Set group ownership to www-data for nginx access
+      chgrp -R www-data {{ web_server_webroot_directory }}
+      
+      echo "Permissions fixed successfully!"
+      echo "Files: 644 (readable by nginx)"
+      echo "Directories: 755 (accessible by nginx)"
+      echo "Group: www-data"
+    dest: "{{ web_server_data_directory }}/fix-permissions.sh"
+    owner: "{{ web_server_owner }}"
+    group: "{{ web_server_group }}"
+    mode: '0755'
+  tags: ['web-server', 'scripts']
+
+- name: Create info.html file (accessible at /info.html)
+  become: true
+  copy:
+    content: |
+      <!DOCTYPE html>
+      <html lang="en">
+      <head>
+          <meta charset="UTF-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <title>Web Server - {{ inventory_hostname }}</title>
+          <style>
+              body { font-family: Arial, sans-serif; margin: 40px; }
+              h1 { color: #333; }
+              .info { background: #f4f4f4; padding: 20px; border-radius: 5px; margin: 20px 0; }
+          </style>
+      </head>
+      <body>
+          <h1>Web Server Info - {{ inventory_hostname }}</h1>
+          <div class="info">
+              <p>This is a simple web server running on {{ inventory_hostname }}.</p>
+              <p><strong>Note:</strong> The main page shows a directory listing of all uploaded files. This info page is accessible at <code>/info.html</code>.</p>
+              <p>You can upload files to this directory using scp or rsync:</p>
+              <code>scp file.txt {{ ansible_user }}@{{ ansible_host }}:{{ web_server_webroot_directory }}/</code>
+              <br><br>
+              <code>rsync -av /local/path/ {{ ansible_user }}@{{ ansible_host }}:{{ web_server_webroot_directory }}/</code>
+              <br><br>
+              <p><strong>Important:</strong> After uploading files, run the fix-permissions script to ensure proper access:</p>
+              <code>sudo {{ web_server_data_directory }}/fix-permissions.sh</code>
+          </div>
+          <p>Server time: {{ ansible_date_time.iso8601 }}</p>
+      </body>
+      </html>
+    dest: "{{ web_server_webroot_directory }}/info.html"
+    owner: "{{ web_server_owner }}"
+    group: "{{ web_server_group }}"
+    mode: '0644'
+  tags: ['web-server', 'content']
+
+- name: Generate nginx configuration
+  become: true
+  template:
+    src: nginx.conf.j2
+    dest: "{{ web_server_data_directory }}/nginx.conf"
+    owner: "{{ web_server_owner }}"
+    group: "{{ web_server_group }}"
+    mode: '0644'
+  tags: ['web-server', 'config']
+
+- name: Generate Docker Compose file
+  become: true
+  template:
+    src: docker-compose.yml.j2
+    dest: "{{ web_server_data_directory }}/docker-compose.yml"
+    owner: "{{ web_server_owner }}"
+    group: "{{ web_server_group }}"
+    mode: '0644'
+  tags: ['web-server', 'docker']
+
+- name: Ensure Traefik network exists
+  become: true
+  docker_network:
+    name: "{{ web_server_network_name }}"
+  tags: ['web-server', 'network']
+
+- name: Start web server service
+  become: true
+  community.docker.docker_compose_v2:
+    project_src: "{{ web_server_data_directory }}"
+    state: present
+    pull: always
+  tags: ['web-server', 'service']
+
+- name: Verify web server is running
+  become: true
+  command: "docker ps --filter name={{ web_server_container_name }} --format '{% raw %}{{.Names}}{% endraw %}'"
+  register: web_server_status
+  changed_when: false
+  tags: ['web-server', 'verify']
+
+- name: Display web server status
+  debug:
+    msg: "Web server container status: {{ web_server_status.stdout }}"
+  tags: ['web-server', 'verify']
