@@ -43,6 +43,11 @@
     state: absent
     force_kill: yes
 
+- name: Pull latest n8n image
+  ansible.builtin.shell: docker compose pull n8n
+  args:
+    chdir: "{{ n8n_config_directory }}"
+
 - name: Deploy n8n container
   community.docker.docker_compose_v2:
     project_src: "{{ n8n_config_directory }}"
