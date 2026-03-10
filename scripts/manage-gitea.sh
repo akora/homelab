@@ -42,6 +42,7 @@ Usage: $0 <command> [options]
 Commands:
   deploy              Deploy Gitea with backup system
   backup              Create immediate backup
+  download [file]     Download backup to ~/Downloads (latest if no file specified)
   restore [file]      Restore from backup (latest if no file specified)
   verify [file]       Verify backup integrity (latest if no file specified)
   status              Show Gitea status
@@ -54,6 +55,8 @@ Commands:
 Examples:
   $0 deploy                                    # Deploy Gitea
   $0 backup                                    # Create backup now
+  $0 download                                  # Download latest backup
+  $0 download gitea-dump-20240121_020000.zip  # Download specific backup
   $0 restore                                   # Restore from latest backup
   $0 restore gitea-dump-20240121_020000.zip  # Restore specific backup
   $0 verify                                    # Verify latest backup
@@ -95,6 +98,29 @@ create_backup() {
         error "Backup creation failed"
         exit 1
     fi
+}
+
+# Download backup locally
+download_backup() {
+    local backup_file="${1:-}"
+    local dest_dir="${HOME}/Downloads"
+
+    if [ -n "$backup_file" ]; then
+        local remote_path="/opt/backups/gitea/daily/${backup_file}"
+    else
+        local remote_path
+        remote_path=$(ssh rpi5-01 "sudo ls -t /opt/backups/gitea/daily/*.zip 2>/dev/null | head -1")
+        if [ -z "$remote_path" ]; then
+            error "No backup files found on remote"
+            exit 1
+        fi
+        backup_file=$(basename "$remote_path")
+    fi
+
+    local dest="${dest_dir}/${backup_file}"
+    log "Downloading ${backup_file} to ${dest}..."
+    ssh rpi5-01 "sudo cat ${remote_path}" > "$dest"
+    log "Download complete: ${dest}"
 }
 
 # Restore from backup
@@ -214,6 +240,9 @@ main() {
             ;;
         backup)
             create_backup
+            ;;
+        download)
+            download_backup "${2:-}"
             ;;
         restore)
             restore_backup "${2:-}"
