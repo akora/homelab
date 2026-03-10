@@ -1,148 +1,135 @@
 #!/bin/bash
 # Gitea Backup Verification Script
-# Verifies backup integrity and content of a 'gitea dump' zip file
+# Performs deep validation: zip integrity, required files, DB import, and git fsck
 
 set -euo pipefail
 
-# Configuration
 BACKUP_BASE_DIR="{{ gitea_backup_base_dir }}"
 BACKUP_DIR="${BACKUP_BASE_DIR}/daily"
 LOG_FILE="${BACKUP_BASE_DIR}/verify.log"
+TEMP_DIR=""
 
-# Logging function
 log() {
     echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1" | tee -a "$LOG_FILE"
 }
 
-# Usage function
-usage() {
-    echo "Usage: $0 <backup_file.zip>"
-    echo "       $0 --list                    # List available backups"
-    echo "       $0 --latest                  # Verify latest backup"
-    echo "       $0 --all                     # Verify all backups"
-    exit 1
+error() {
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] ERROR: $1" | tee -a "$LOG_FILE" >&2
 }
 
-# List available backups
-list_backups() {
-    echo "Available Gitea backups:"
-    echo "========================"
-    cd "${BACKUP_DIR}" 2>/dev/null || { echo "No backup directory found"; exit 1; }
-    ls -lht gitea-dump-*.zip 2>/dev/null | while read -r line; do
-        file=$(echo "$line" | awk '{print $9}')
-        size=$(echo "$line" | awk '{print $5}')
-        date=$(echo "$line" | awk '{print $6, $7, $8}')
-        echo "$file ($size, $date)"
-    done || echo "No backups found"
+cleanup() {
+    if [ -n "$TEMP_DIR" ] && [ -d "$TEMP_DIR" ]; then
+        rm -rf "$TEMP_DIR"
+        log "Cleaned up temp directory"
+    fi
+}
+trap cleanup EXIT
+
+# Resolve backup file
+if [ "${1:-}" = "--list" ]; then
+    ls -lht "${BACKUP_DIR}"/*.zip 2>/dev/null || echo "No backups found"
     exit 0
-}
-
-# Verify single backup
-verify_backup() {
-    local backup_file="$1"
-    local backup_path="${BACKUP_DIR}/${backup_file}"
-    
-    if [ ! -f "$backup_path" ]; then
-        log "ERROR: Backup file not found: $backup_path"
-        return 1
+elif [ "${1:-}" = "--latest" ] || [ -z "${1:-}" ]; then
+    backup_file=$(cd "${BACKUP_DIR}" && ls -t gitea-dump-*.zip 2>/dev/null | head -1)
+    if [ -z "$backup_file" ]; then
+        error "No backup files found in ${BACKUP_DIR}"
+        exit 1
     fi
-    
-    log "Verifying backup: $backup_file"
-    
-    # Check file size
-    local file_size=$(stat -f%z "$backup_path" 2>/dev/null || stat -c%s "$backup_path" 2>/dev/null || echo "0")
-    if [ "$file_size" -lt 100000 ]; then  # Less than 100KB is suspicious
-        log "WARNING: Backup file seems too small: ${file_size} bytes"
-    fi
-    
-    # Test archive integrity
-    if ! unzip -t "$backup_path" >/dev/null 2>&1; then
-        log "ERROR: Archive integrity check failed for $backup_file"
-        return 1
-    fi
-    log "✓ ZIP archive integrity is OK"
-
-    # Verify essential components by listing files in the zip
-    local errors=0
-    local zip_contents
-    zip_contents=$(unzip -l "$backup_path")
-
-    if ! echo "$zip_contents" | grep -q 'app.ini'; then
-        log "ERROR: Missing app.ini in backup"
-        ((errors++))
-    else
-        log "✓ app.ini found"
-    fi
-
-    if ! echo "$zip_contents" | grep -q 'gitea.db'; then
-        log "WARNING: gitea.db (SQLite database) not found. This is normal if you use an external database."
-    else
-        log "✓ gitea.db found"
-    fi
-
-    if ! echo "$zip_contents" | grep -q 'gitea-repo.zip'; then
-        log "WARNING: Missing gitea-repo.zip in backup. This is normal for a new instance with no repositories."
-    else
-        log "✓ gitea-repo.zip found"
-    fi
-
-    if [ $errors -eq 0 ]; then
-        log "✓ Backup verification passed: $backup_file"
-        return 0
-    else
-        log "✗ Backup verification failed: $backup_file ($errors errors)"
-        return 1
-    fi
-}
-
-# Get latest backup
-get_latest_backup() {
-    cd "${BACKUP_DIR}" 2>/dev/null || { echo "No backup directory found"; exit 1; }
-    ls -t gitea-dump-*.zip 2>/dev/null | head -1 || { echo "No backups found"; exit 1; }
-}
-
-# Main logic
-if [ $# -eq 0 ]; then
-    usage
+else
+    backup_file="$1"
 fi
 
-case "$1" in
-    --list|-l)
-        list_backups
-        ;;
-    --latest)
-        BACKUP_FILE=$(get_latest_backup)
-        verify_backup "$BACKUP_FILE"
-        ;;
-    --all)
-        log "Verifying all Gitea backups..."
-        cd "${BACKUP_DIR}" 2>/dev/null || { log "No backup directory found"; exit 1; }
-        
-        total=0
-        passed=0
-        failed=0
-        
-        for backup in gitea-dump-*.zip; do
-            if [ -f "$backup" ]; then
-                ((total++))
-                if verify_backup "$backup"; then
-                    ((passed++))
-                else
-                    ((failed++))
-                fi
-                echo "---"
-            fi
-        done
-        
-        log "Verification summary: $total total, $passed passed, $failed failed"
-        if [ $failed -gt 0 ]; then
-            exit 1
+backup_path="${BACKUP_DIR}/${backup_file}"
+
+if [ ! -f "$backup_path" ]; then
+    error "Backup file not found: $backup_path"
+    exit 1
+fi
+
+log "========================================"
+log "Verifying backup: $backup_file"
+log "========================================"
+
+# 1. Zip integrity test
+log "[1/4] Testing zip integrity..."
+if unzip -t "$backup_path" > /dev/null 2>&1; then
+    log "  ✓ Zip file is not corrupt"
+else
+    error "  ✗ Zip file is corrupt!"
+    exit 1
+fi
+
+# 2. Extract to temp dir and check required files
+log "[2/4] Extracting and checking required files..."
+TEMP_DIR=$(mktemp -d /tmp/gitea-verify-XXXXXX)
+unzip -q "$backup_path" -d "$TEMP_DIR"
+
+for required in app.ini gitea-db.sql; do
+    found=$(find "$TEMP_DIR" -name "$required" | head -1)
+    if [ -n "$found" ]; then
+        size=$(du -sh "$found" | cut -f1)
+        log "  ✓ Found $required ($size)"
+    else
+        error "  ✗ Missing $required"
+        exit 1
+    fi
+done
+
+# 3. SQL database validation — import into in-memory SQLite
+log "[3/4] Validating database (importing SQL into memory)..."
+sql_file=$(find "$TEMP_DIR" -name "gitea-db.sql" | head -1)
+
+python3 - "$sql_file" << 'PYEOF'
+import sqlite3, sys, re
+
+sql_file = sys.argv[1]
+sql = open(sql_file, 'r').read()
+
+# Strip xorm header comment before executing
+sql = re.sub(r'^/\*.*?\*/', '', sql, flags=re.DOTALL).strip()
+
+conn = sqlite3.connect(':memory:')
+try:
+    conn.executescript(sql)
+except Exception as e:
+    print(f"ERROR: Failed to import SQL: {e}", file=sys.stderr)
+    sys.exit(1)
+
+tables = conn.execute("SELECT COUNT(*) FROM sqlite_master WHERE type='table'").fetchone()[0]
+rows = sum(
+    conn.execute(f"SELECT COUNT(*) FROM \"{row[0]}\"").fetchone()[0]
+    for row in conn.execute("SELECT name FROM sqlite_master WHERE type='table'")
+)
+conn.close()
+print(f"  ✓ Database imported successfully ({tables} tables, {rows} total rows)")
+PYEOF
+
+# 4. Git repo validation
+log "[4/4] Validating git repositories..."
+repos_dir=$(find "$TEMP_DIR" -type d -name "repos" | head -1)
+if [ -z "$repos_dir" ]; then
+    log "  ⚠ No repositories directory found"
+else
+    repo_count=0
+    fail_count=0
+    while IFS= read -r -d '' repo; do
+        repo_name=$(realpath --relative-to="$repos_dir" "$repo")
+        if git -c safe.directory="*" -C "$repo" fsck > /dev/null 2>&1; then
+            repo_count=$((repo_count + 1))
+        else
+            error "  ✗ Repository failed fsck: $repo_name"
+            fail_count=$((fail_count + 1))
         fi
-        ;;
-    --help|-h)
-        usage
-        ;;
-    *)
-        verify_backup "$1"
-        ;;
-esac
+    done < <(find "$repos_dir" -maxdepth 2 -name "*.git" -type d -print0)
+
+    if [ $fail_count -eq 0 ]; then
+        log "  ✓ All $repo_count repositories passed git fsck"
+    else
+        error "  ✗ $fail_count repositories failed validation"
+        exit 1
+    fi
+fi
+
+log "========================================"
+log "✓ Backup verification PASSED: $backup_file"
+log "========================================"
