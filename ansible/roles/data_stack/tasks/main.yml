@@ -1,0 +1,78 @@
+---
+# Data Stack Role Tasks (Postgres + Grafana, Phase 1 — collector deferred)
+
+- name: Ensure Docker is installed
+  ansible.builtin.include_tasks: check_docker.yml
+
+- name: Install git
+  become: true
+  package:
+    name: git
+    state: present
+  when: ansible_os_family == "Debian"
+
+- name: Create data_stack config directory
+  ansible.builtin.file:
+    path: "{{ data_stack_config_directory }}"
+    state: directory
+    mode: '0755'
+
+- name: Create data_stack data directories
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    mode: '0777'
+  with_items:
+    - "{{ data_stack_postgres_data_directory }}"
+    - "{{ data_stack_grafana_data_directory }}"
+
+- name: Check if Docker network exists
+  ansible.builtin.shell: docker network ls | grep {{ data_stack_network_name }}
+  register: network_check
+  changed_when: false
+  failed_when: false
+
+- name: Create Docker network if it doesn't exist
+  ansible.builtin.shell: docker network create {{ data_stack_network_name }}
+  when: network_check.rc != 0
+
+- name: Clone metrics-pipeline at pinned ref
+  ansible.builtin.git:
+    repo: "{{ data_stack_metrics_pipeline_repo }}"
+    dest: "{{ data_stack_clone_directory }}"
+    version: "{{ data_stack_metrics_pipeline_ref }}"
+    force: yes
+
+- name: Create Docker Compose file
+  ansible.builtin.template:
+    src: docker-compose.yml.j2
+    dest: "{{ data_stack_config_directory }}/docker-compose.yml"
+    mode: '0644'
+
+- name: Deploy data stack containers
+  community.docker.docker_compose_v2:
+    project_src: "{{ data_stack_config_directory }}"
+    state: present
+  register: data_stack_deploy_result
+
+- name: Show data stack deployment result
+  ansible.builtin.debug:
+    var: data_stack_deploy_result
+    verbosity: 1
+
+- name: Check Postgres status
+  ansible.builtin.shell: docker ps | grep data-stack-postgres
+  register: data_stack_postgres_status
+  changed_when: false
+  failed_when: false
+
+- name: Check Grafana status
+  ansible.builtin.shell: docker ps | grep data-stack-grafana
+  register: data_stack_grafana_status
+  changed_when: false
+  failed_when: false
+
+- name: Display Grafana URL
+  ansible.builtin.debug:
+    msg: "Grafana is available at {{ data_stack_grafana_root_url }}"
+  when: data_stack_grafana_status.rc == 0

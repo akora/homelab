@@ -1,0 +1,66 @@
+---
+# Data Stack Docker Compose Configuration (Postgres + Grafana)
+# This file is managed by Ansible - local changes will be overwritten
+#
+# The Postgres service key below must stay exactly "postgres" — Compose's
+# network-internal DNS alias is the service key, not container_name, and
+# metrics-pipeline/grafana/provisioning/datasources/postgres.yml hardcodes
+# "url: postgres:5432" (bind-mounted read-only, cannot be templated here).
+
+services:
+  postgres:
+    image: "{{ data_stack_postgres_image }}"
+    container_name: data-stack-postgres
+    restart: unless-stopped
+    networks:
+      - {{ data_stack_network_name }}
+    environment:
+      POSTGRES_DB: "{{ data_stack_postgres_db }}"
+      POSTGRES_USER: "{{ data_stack_postgres_user }}"
+      POSTGRES_PASSWORD: "{{ data_stack_postgres_password }}"
+      PG_METRICS_RW_PASSWORD: "{{ data_stack_postgres_metrics_rw_password }}"
+      PG_GRAFANA_RO_PASSWORD: "{{ data_stack_postgres_grafana_ro_password }}"
+    volumes:
+      - "{{ data_stack_postgres_data_directory }}:/var/lib/postgresql/data"
+      - "{{ data_stack_clone_directory }}/migrations:/docker-entrypoint-initdb.d:ro"
+    labels:
+      - "traefik.enable=false"
+
+  grafana:
+    image: "{{ data_stack_grafana_image }}"
+    container_name: data-stack-grafana
+    restart: unless-stopped
+    depends_on:
+      - postgres
+    networks:
+      - {{ data_stack_network_name }}
+      - {{ data_stack_traefik_network_name }}
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: "{{ data_stack_grafana_admin_password }}"
+      GF_SERVER_ROOT_URL: "{{ data_stack_grafana_root_url }}"
+      GRAFANA_DB_PASSWORD: "{{ data_stack_postgres_grafana_ro_password }}"
+    volumes:
+      - "{{ data_stack_grafana_data_directory }}:/var/lib/grafana"
+      - "{{ data_stack_clone_directory }}/grafana/provisioning:/etc/grafana/provisioning:ro"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network={{ data_stack_traefik_network_name }}"
+      - "traefik.http.routers.grafana.rule=Host(`{{ data_stack_grafana_domain }}`)"
+      - "traefik.http.routers.grafana.entrypoints=websecure"
+      - "traefik.http.routers.grafana.tls=true"
+      - "traefik.http.routers.grafana.tls.certresolver={{ data_stack_grafana_traefik_certresolver }}"
+      - "traefik.http.services.grafana.loadbalancer.server.port={{ data_stack_grafana_http_port }}"
+{% if data_stack_homepage_integration %}
+      # Homepage Auto-Discovery Labels
+      - "homepage.group={{ inventory_hostname }}"
+      - "homepage.name={{ data_stack_homepage_name }}"
+      - "homepage.icon={{ data_stack_homepage_icon }}"
+      - "homepage.href={{ data_stack_grafana_root_url }}"
+      - "homepage.description={{ data_stack_homepage_description }}"
+{% endif %}
+
+networks:
+  {{ data_stack_network_name }}:
+    driver: bridge
+  {{ data_stack_traefik_network_name }}:
+    external: true

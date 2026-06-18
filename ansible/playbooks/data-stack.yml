@@ -1,0 +1,8 @@
+---
+# Playbook to deploy the data stack (Postgres, Grafana)
+
+- name: Deploy data stack (Postgres, Grafana)
+  hosts: zima-01
+  become: true
+  roles:
+    - data_stack

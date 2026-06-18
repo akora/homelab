@@ -1,0 +1,38 @@
+---
+# Data Stack Role Default Variables (Postgres + Grafana, Phase 1 — collector deferred)
+
+# metrics-pipeline source (schema/dashboards-as-code)
+data_stack_metrics_pipeline_repo: "https://git.l4n.io/akora/metrics-pipeline.git"
+data_stack_metrics_pipeline_ref: "v0.1.0"  # pinned tag; bump to upgrade schema/dashboards
+data_stack_clone_directory: "/opt/metrics-pipeline"
+
+# Directories
+data_stack_postgres_data_directory: "/opt/docker/data-stack/postgres-data"
+data_stack_grafana_data_directory: "/opt/docker/data-stack/grafana-data"
+data_stack_config_directory: "/opt/docker/data-stack/config"
+
+# Networking
+data_stack_network_name: "data-stack-net"      # internal only, not external
+data_stack_traefik_network_name: "traefik-net"  # joined only by grafana
+
+# Postgres
+data_stack_postgres_image: "postgres:16"
+data_stack_postgres_user: "postgres"  # bootstrap superuser only
+data_stack_postgres_password: "{{ vault_data_stack_postgres_password }}"
+data_stack_postgres_metrics_rw_password: "{{ vault_data_stack_metrics_rw_password }}"
+data_stack_postgres_grafana_ro_password: "{{ vault_data_stack_grafana_ro_password }}"
+data_stack_postgres_db: "metrics"
+
+# Grafana
+data_stack_grafana_image: "grafana/grafana-oss:latest"
+data_stack_grafana_admin_password: "{{ vault_data_stack_grafana_admin_password }}"
+data_stack_grafana_http_port: "3000"
+data_stack_grafana_domain: "{{ vault_service_domains.grafana }}"
+data_stack_grafana_root_url: "https://{{ data_stack_grafana_domain }}/"
+data_stack_grafana_traefik_certresolver: "cloudflare"
+
+# Homepage integration
+data_stack_homepage_integration: true
+data_stack_homepage_name: "Grafana"
+data_stack_homepage_icon: "si-grafana"
+data_stack_homepage_description: "Metrics Dashboards"

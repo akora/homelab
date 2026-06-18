@@ -44,6 +44,8 @@ vault_service_domains:
   homepage: "home.your-domain.com"
   syncthing: "sync.your-domain.com"
   n8n: "n8n.your-domain.com"
+  web: "static.your-domain.com"
+  grafana: "grafana.your-domain.com"
 
 # =============================================================================
 # GITEA CREDENTIALS
@@ -82,3 +84,15 @@ vault_n8n_basic_auth_user: "admin"
 vault_n8n_basic_auth_password: "your-secure-n8n-password"
 # Encryption key for n8n credential storage (must be exactly 32 characters)
 vault_n8n_encryption_key: "your-32-character-encryption-key"
+
+# =============================================================================
+# DATA STACK CREDENTIALS (Postgres + Grafana)
+# =============================================================================
+# Postgres bootstrap superuser password
+vault_data_stack_postgres_password: "your-secure-postgres-superuser-password"
+# Password for the metrics_rw role (created by metrics-pipeline's migrations)
+vault_data_stack_metrics_rw_password: "your-secure-metrics-rw-password"
+# Password for the grafana_ro role (created by metrics-pipeline's migrations)
+vault_data_stack_grafana_ro_password: "your-secure-grafana-ro-password"
+# Grafana admin password
+vault_data_stack_grafana_admin_password: "your-secure-grafana-admin-password"
