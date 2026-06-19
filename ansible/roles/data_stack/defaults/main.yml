@@ -3,7 +3,7 @@
 
 # metrics-pipeline source (schema/dashboards-as-code)
 data_stack_metrics_pipeline_repo: "https://git.l4n.io/akora/metrics-pipeline.git"
-data_stack_metrics_pipeline_ref: "v0.1.0"  # pinned tag; bump to upgrade schema/dashboards
+data_stack_metrics_pipeline_ref: "main"  # tracks main; re-run the play to pick up latest schema/dashboards
 data_stack_clone_directory: "/opt/metrics-pipeline"
 
 # Directories

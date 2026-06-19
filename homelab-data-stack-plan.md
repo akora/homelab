@@ -25,7 +25,7 @@ Mirrors the structure of `ansible/roles/gitea/` and `ansible/roles/n8n/` (both r
 **`defaults/main.yml`** — new variables, following the `gitea_*`/`n8n_*` naming convention:
 ```yaml
 data_stack_metrics_pipeline_repo: "https://github.com/akora/metrics-pipeline.git"
-data_stack_metrics_pipeline_ref: "v0.1.0"          # pinned tag; bump to upgrade schema/dashboards
+data_stack_metrics_pipeline_ref: "main"            # tracks main; re-run the play to pick up latest schema/dashboards
 data_stack_clone_directory: "/opt/metrics-pipeline"
 
 data_stack_postgres_data_directory: "/opt/docker/data-stack/postgres-data"
