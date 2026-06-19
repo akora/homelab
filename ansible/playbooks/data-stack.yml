@@ -1,7 +1,7 @@
 ---
-# Playbook to deploy the data stack (Postgres, Grafana)
+# Playbook to deploy the data stack (Postgres, Grafana, fuel collector)
 
-- name: Deploy data stack (Postgres, Grafana)
+- name: Deploy data stack (Postgres, Grafana, fuel collector)
   hosts: zima-01
   become: true
   roles:

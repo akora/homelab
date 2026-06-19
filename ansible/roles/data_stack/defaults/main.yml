@@ -1,5 +1,5 @@
 ---
-# Data Stack Role Default Variables (Postgres + Grafana, Phase 1 — collector deferred)
+# Data Stack Role Default Variables (Postgres + Grafana + host-run fuel collector)
 
 # metrics-pipeline source (schema/dashboards-as-code)
 data_stack_metrics_pipeline_repo: "https://git.l4n.io/akora/metrics-pipeline.git"
@@ -22,6 +22,7 @@ data_stack_postgres_password: "{{ vault_data_stack_postgres_password }}"
 data_stack_postgres_metrics_rw_password: "{{ vault_data_stack_metrics_rw_password }}"
 data_stack_postgres_grafana_ro_password: "{{ vault_data_stack_grafana_ro_password }}"
 data_stack_postgres_db: "metrics"
+data_stack_postgres_port: "5432"  # bound to 127.0.0.1 only — see compose template
 
 # Grafana
 data_stack_grafana_image: "grafana/grafana-oss:latest"
@@ -36,3 +37,12 @@ data_stack_homepage_integration: true
 data_stack_homepage_name: "Grafana"
 data_stack_homepage_icon: "si-grafana"
 data_stack_homepage_description: "Metrics Dashboards"
+
+# Fuel collector — plain venv + script on the host, scheduled by cron
+# (connects to Postgres via the localhost-bound port above; no container)
+data_stack_collector_venv: "{{ data_stack_config_directory }}/collector-venv"
+data_stack_collector_script: "{{ data_stack_config_directory }}/run-fuel-collector.sh"
+data_stack_collector_schedule:    # weekly, Thursday evening CET — bulletin publishes Thursday
+  minute: "0"
+  hour: "20"
+  weekday: "4"

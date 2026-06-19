@@ -14,6 +14,9 @@ services:
     restart: unless-stopped
     networks:
       - {{ data_stack_network_name }}
+    ports:
+      # localhost-only, for the host-side fuel collector script; never the LAN/host's public interface
+      - "127.0.0.1:{{ data_stack_postgres_port }}:5432"
     environment:
       POSTGRES_DB: "{{ data_stack_postgres_db }}"
       POSTGRES_USER: "{{ data_stack_postgres_user }}"

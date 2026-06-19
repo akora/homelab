@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+# Managed by Ansible (data_stack role) - local changes will be overwritten.
+# Runs the metrics-pipeline fuel collector against the localhost-bound Postgres port.
+# Usage: run-fuel-collector.sh [--backfill] [--dry-run]
+set -euo pipefail
+
+export DB_HOST="127.0.0.1"
+export DB_PORT="{{ data_stack_postgres_port }}"
+export DB_NAME="{{ data_stack_postgres_db }}"
+export DB_USER="metrics_rw"
+export DB_PASSWORD="{{ data_stack_postgres_metrics_rw_password }}"
+
+cd "{{ data_stack_clone_directory }}"
+exec "{{ data_stack_collector_venv }}/bin/python" -m collectors.fuel_eu_bulletin "$@"

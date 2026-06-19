@@ -1,5 +1,5 @@
 ---
-# Data Stack Role Tasks (Postgres + Grafana, Phase 1 — collector deferred)
+# Data Stack Role Tasks (Postgres + Grafana + host-run fuel collector)
 
 - name: Ensure Docker is installed
   ansible.builtin.include_tasks: check_docker.yml
@@ -59,6 +59,54 @@
   ansible.builtin.debug:
     var: data_stack_deploy_result
     verbosity: 1
+
+- name: Install python3-venv
+  become: true
+  package:
+    name: python3-venv
+    state: present
+  when: ansible_os_family == "Debian"
+
+- name: Create venv for fuel collector
+  ansible.builtin.command: "python3 -m venv {{ data_stack_collector_venv }}"
+  args:
+    creates: "{{ data_stack_collector_venv }}/bin/python"
+
+- name: Install metrics-pipeline into collector venv
+  ansible.builtin.command: "{{ data_stack_collector_venv }}/bin/pip install -e ."
+  args:
+    chdir: "{{ data_stack_clone_directory }}"
+  register: data_stack_collector_pip_install
+  changed_when: "'Successfully installed' in data_stack_collector_pip_install.stdout"
+
+- name: Deploy fuel collector run script
+  ansible.builtin.template:
+    src: run-fuel-collector.sh.j2
+    dest: "{{ data_stack_collector_script }}"
+    mode: '0700'  # contains the metrics_rw DB password
+
+- name: Install cron
+  become: true
+  package:
+    name: cron
+    state: present
+  when: ansible_os_family == "Debian"
+
+- name: Ensure cron service is running
+  ansible.builtin.systemd:
+    name: cron
+    state: started
+    enabled: yes
+
+- name: Schedule weekly fuel collector run
+  ansible.builtin.cron:
+    name: "Fuel price collector (EU Oil Bulletin)"
+    cron_file: "data-stack-fuel-collector"
+    user: root
+    minute: "{{ data_stack_collector_schedule.minute }}"
+    hour: "{{ data_stack_collector_schedule.hour }}"
+    weekday: "{{ data_stack_collector_schedule.weekday }}"
+    job: "{{ data_stack_collector_script }} >> /var/log/data-stack-fuel-collector.log 2>&1"
 
 - name: Check Postgres status
   ansible.builtin.shell: docker ps | grep data-stack-postgres
