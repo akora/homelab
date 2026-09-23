@@ -41,6 +41,8 @@ services:
     environment:
       GF_SECURITY_ADMIN_PASSWORD: "{{ data_stack_grafana_admin_password }}"
       GF_SERVER_ROOT_URL: "{{ data_stack_grafana_root_url }}"
+      # Disable usage-stats reporting; its daily collector logs errors for bundled plugins we don't use
+      GF_ANALYTICS_REPORTING_ENABLED: "false"
       GRAFANA_DB_PASSWORD: "{{ data_stack_postgres_grafana_ro_password }}"
     volumes:
       - "{{ data_stack_grafana_data_directory }}:/var/lib/grafana"

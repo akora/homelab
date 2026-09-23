@@ -19,12 +19,13 @@
 
 - name: Create data_stack data directories
   ansible.builtin.file:
-    path: "{{ item }}"
+    path: "{{ item.path }}"
     state: directory
-    mode: '0777'
+    mode: "{{ item.mode | default(omit) }}"
   with_items:
-    - "{{ data_stack_postgres_data_directory }}"
-    - "{{ data_stack_grafana_data_directory }}"
+    # Postgres entrypoint chowns/chmods its own data dir to 0700; don't fight it
+    - { path: "{{ data_stack_postgres_data_directory }}" }
+    - { path: "{{ data_stack_grafana_data_directory }}", mode: '0777' }
 
 - name: Check if Docker network exists
   ansible.builtin.shell: docker network ls | grep {{ data_stack_network_name }}
