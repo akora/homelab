@@ -22,7 +22,7 @@ n8n_basic_auth_password: "{{ vault_n8n_basic_auth_password }}"
 n8n_encryption_key: "{{ vault_n8n_encryption_key }}"
 
 # Timezone settings
-n8n_timezone: "Europe/Budapest"
+n8n_timezone: "Etc/UTC"
 
 # Traefik integration
 n8n_traefik_integration: true
